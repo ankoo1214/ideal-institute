@@ -5,10 +5,13 @@ import Dashboard from '../screens/Dashboard';
 import Students from '../screens/AddStudents';
 import Analytics from '../screens/Analytics';
 import Settings from '../screens/Settings';
+import { useTheme } from '../theme/ThemeContext'; // your custom hook, adjust path
 
 const Tab = createBottomTabNavigator();
 
 export default function TabNav() {
+  const { colors } = useTheme();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -35,10 +38,21 @@ export default function TabNav() {
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#007AFF',
-        tabBarInactiveTintColor: 'gray',
-        tabBarStyle: { height: 60, paddingBottom: 5 },
-        tabBarLabelStyle: { fontSize: 12 },
+        tabBarActiveTintColor: colors.accent, // use accent color for active icons/labels
+        tabBarInactiveTintColor: colors.placeholder, // use placeholder color for inactive icons/labels
+        tabBarStyle: {
+          height: 60,
+          paddingBottom: 5,
+          backgroundColor: colors.card, // background color of tab bar adapts to theme
+          borderTopColor: colors.border, // border color adapting to theme
+          borderTopWidth: 1,
+          elevation: 8, // shadow for Android
+          shadowColor: '#000', // shadow for iOS
+          shadowOpacity: 0.1,
+          shadowRadius: 6,
+          shadowOffset: { width: 0, height: -2 },
+        },
+        tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
       })}
     >
       <Tab.Screen name="Dashboard" component={Dashboard} />

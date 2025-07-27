@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
 import { sWidth, sHeight } from '../assets/utils'; // Responsive dimensions
-
+import { initStudentTable } from '../db/studentTable';
+import { dropStudentTable } from '../db/deleteTable';
 const Splash = ({ navigation }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -9,7 +10,22 @@ const Splash = ({ navigation }) => {
     }, 3000);
     return () => clearTimeout(timer);
   }, []);
+  // useEffect(() => {
+  //   const resetDB = async () => {
+  //     try {
+  //       const result = await dropStudentTable();
+  //       console.log('✔️ Table dropped in SplashScreen:', result);
+  //     } catch (error) {
+  //       console.log('❌ Failed to drop table in SplashScreen:', error);
+  //     }
+  //   };
 
+  //   resetDB();
+  // }, []);
+
+  // useEffect(() => {
+  //   initStudentTable();
+  // }, []);
   return (
     <View style={styles.container}>
       <Image
