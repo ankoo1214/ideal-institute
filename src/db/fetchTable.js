@@ -1,21 +1,21 @@
-import db from './createTable'; // or your SQLite db instance
+import db from './createTable';
 
-export const fetchStudents = () => {
+export const fetchTable = tableName => {
   return new Promise((resolve, reject) => {
     db.transaction(tx => {
       tx.executeSql(
-        'SELECT data FROM students',
+        `SELECT data from ${tableName}`,
         [],
         (txObj, { rows: { length, item } }) => {
-          const students = [];
+          const list = [];
           for (let i = 0; i < length; i++) {
             try {
-              students.push(JSON.parse(item(i).data));
+              list.push(JSON.parse(item(i).data));
             } catch (e) {
               console.error('JSON parse error:', e);
             }
           }
-          resolve(students);
+          resolve(list);
         },
         (txObj, error) => {
           reject(error);

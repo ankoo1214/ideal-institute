@@ -1,14 +1,16 @@
-import { createTable } from './createTable';
-import { insertTable } from './insertTable';
+import db from './createTable';
 
-const STUDENT_TABLE = 'students';
-const STUDENT_SCHEMA =
-  'id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT, SID TEXT';
+export const insertTable = (tableName, data) => {
+  const sid = data.sid || data.id;
 
-export const initStudentTable = () => {
-  return createTable(STUDENT_TABLE, STUDENT_SCHEMA);
-};
-
-export const insertStudent = studentObj => {
-  return insertTable(STUDENT_TABLE, 'data', studentObj, sid);
+  return new Promise((resolve, reject) => {
+    db.transaction(tx => {
+      tx.executeSql(
+        `INSERT INTO ${tableName} (sid, data) VALUES (?, ?)`,
+        [sid, JSON.stringify(data)],
+        (txObj, resultSet) => resolve(resultSet),
+        (txObj, error) => reject(error),
+      );
+    });
+  });
 };

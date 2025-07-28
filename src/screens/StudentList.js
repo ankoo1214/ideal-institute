@@ -16,7 +16,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import * as Animatable from 'react-native-animatable';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { sHeight, sWidth } from '../assets/utils';
-import { fetchStudents } from '../db/fetchTable';
+import { fetchTable } from '../db/fetchTable';
 import { dropStudentTable } from '../db/deleteTable';
 import { setStudents, deleteStudent } from '../redux/slice/studentSlice';
 import { deleteStudentFromDb } from '../db/deleteQuery';
@@ -76,7 +76,7 @@ export default function StudentList() {
 
   async function loadStudents() {
     try {
-      const storedStudents = await fetchStudents();
+      const storedStudents = await fetchTable('STUDENTS');
       dispatch(setStudents(storedStudents));
       console.log('Fetched Students:>', storedStudents);
     } catch (error) {
@@ -167,7 +167,6 @@ export default function StudentList() {
   };
 
   async function doDelete() {
-
     console.log('Confirm Modal:>', confirmModal);
     const student = confirmModal.student;
     if (!student) return;

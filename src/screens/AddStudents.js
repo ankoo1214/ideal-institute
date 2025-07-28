@@ -8,14 +8,16 @@ import {
   KeyboardAvoidingView,
   Platform,
   Modal,
-  StyleSheet,
   FlatList,
+  StyleSheet,
   Dimensions,
+  Keyboard,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Animatable from 'react-native-animatable';
 import { useDispatch, useSelector } from 'react-redux';
-import { insertStudent, initStudentTable } from '../db/studentTable';
+import { insertTable } from '../db/insertTable';
+import { createTable } from '../db/createTable';
 import { addStudent } from '../redux/slice/studentSlice';
 import { useTheme } from '../theme/ThemeContext';
 
@@ -30,12 +32,12 @@ const genderOptions = ['Male', 'Female', 'Other'];
 
 export default function AddStudent() {
   const dispatch = useDispatch();
-  const students = useSelector(state => state.students); // Redux state for existing students
+  const students = useSelector(state => state.students) || [];
   const { colors } = useTheme();
 
   const [form, setForm] = useState({
     name: '',
-    dob: new Date(),
+    dob: null,
     phone: '',
     gender: '',
     address: '',
@@ -43,7 +45,7 @@ export default function AddStudent() {
     class: '',
     stream: '',
     scienceGroup: '',
-    admissionDate: new Date(),
+    admissionDate: null,
     totalFees: '',
     submittedFees: [],
   });
@@ -52,7 +54,7 @@ export default function AddStudent() {
   const [admissionPicker, setAdmissionPicker] = useState(false);
   const [feeModal, setFeeModal] = useState(false);
   const [feeAmount, setFeeAmount] = useState('');
-  const [feeDate, setFeeDate] = useState(new Date());
+  const [feeDate, setFeeDate] = useState(null);
   const [feeDatePicker, setFeeDatePicker] = useState(false);
   const [classModal, setClassModal] = useState(false);
   const [streamModal, setStreamModal] = useState(false);
@@ -63,10 +65,10 @@ export default function AddStudent() {
   const successPopRef = useRef(null);
 
   useEffect(() => {
-    initStudentTable();
+    createTable('STUDENTS');
   }, []);
 
-  // Generates unique student ID like s1, s2... by scanning existing IDs to avoid duplication
+  // Generate unique student ID like s1, s2, ...
   function generateStudentId() {
     if (!students || students.length === 0) return 's1';
 
@@ -80,6 +82,7 @@ export default function AddStudent() {
     return `s${maxId + 1}`;
   }
 
+  // Handle field changes; reset science group if stream changes
   const handleChange = (field, value) => {
     if (field === 'stream') {
       setForm(prev => ({ ...prev, stream: value, scienceGroup: '' }));
@@ -88,23 +91,28 @@ export default function AddStudent() {
     }
   };
 
+  // Add new fee to submittedFees array
   const submitFee = () => {
     if (feeAmount) {
       const newFee = {
         amount: parseFloat(feeAmount),
-        date: feeDate.toDateString(),
+        date: feeDate ? feeDate.toDateString() : new Date().toDateString(),
       };
       handleChange('submittedFees', [...form.submittedFees, newFee]);
       setFeeAmount('');
+      setFeeDate(null);
       setFeeModal(false);
     }
   };
 
-  const remainingFees = form.totalFees
-    ? parseFloat(form.totalFees) -
-      form.submittedFees.reduce((sum, f) => sum + (f.amount || 0), 0)
-    : 0;
+  // Calculate remaining fees safely
+  const remainingFees =
+    form.totalFees && !isNaN(parseFloat(form.totalFees))
+      ? parseFloat(form.totalFees) -
+        form.submittedFees.reduce((sum, f) => sum + (f.amount || 0), 0)
+      : 0;
 
+  // Close modals with animations
   const closeClassModal = async () => {
     if (classModalRef.current) {
       await classModalRef.current.fadeOutDown(300);
@@ -119,18 +127,27 @@ export default function AddStudent() {
     setStreamModal(false);
   };
 
+  // Parse ISO date string or fallback to current Date
+  const parseDate = dateString =>
+    dateString ? new Date(dateString) : new Date();
+
+  // Save student with serializable dates (ISO strings)
   const handleSave = async () => {
+    console.log('handleSave: started');
+
     if (!form.name.trim()) {
+      console.log('handleSave: name validation failed');
       alert('Please enter student name');
       return;
     }
 
     const newId = generateStudentId();
+    console.log('handleSave: generated ID =', newId);
 
     const studentToSave = {
       id: newId,
       name: form.name.trim(),
-      dob: form.dob instanceof Date ? form.dob : new Date(form.dob),
+      dob: form.dob instanceof Date ? form.dob.toISOString() : form.dob,
       phone: form.phone.trim(),
       gender: form.gender,
       address: form.address.trim(),
@@ -140,34 +157,51 @@ export default function AddStudent() {
       scienceGroup: form.scienceGroup,
       admissionDate:
         form.admissionDate instanceof Date
-          ? form.admissionDate
-          : new Date(form.admissionDate),
+          ? form.admissionDate.toISOString()
+          : form.admissionDate,
       totalFees: form.totalFees.trim(),
-      submittedFees: Array.isArray(form.submittedFees)
-        ? form.submittedFees
-        : [],
+      submittedFees: form.submittedFees.map((f, idx) => {
+        console.log(
+          `handleSave: fee item ${idx} - amount: ${f.amount}, date: ${f.date}`,
+        );
+        return {
+          amount: f.amount,
+          date: f.date, // assumed already string
+        };
+      }),
     };
 
+    console.log('handleSave: studentToSave object:', studentToSave);
+
     try {
+      console.log('handleSave: dispatching addStudent');
       dispatch(addStudent(studentToSave));
-      await insertStudent(studentToSave);
+
+      console.log('handleSave: calling insertTable...');
+      await insertTable('STUDENTS', studentToSave);
+      console.log('handleSave: insertTable success');
 
       setShowSuccess(true);
       if (successPopRef.current) {
+        console.log('handleSave: animating success pop-up (fadeIn)');
         await successPopRef.current.fadeInUp(500);
+        console.log('handleSave: success pop-up animation complete');
       }
 
       setTimeout(async () => {
         if (successPopRef.current) {
+          console.log('handleSave: animating success pop-up (fadeOut)');
           await successPopRef.current.fadeOutDown(400);
+          console.log('handleSave: success pop-up fadeOut complete');
         }
         setShowSuccess(false);
+        console.log('handleSave: success pop-up hidden');
       }, 2000);
 
-      // Reset form
+      console.log('handleSave: resetting form');
       setForm({
         name: '',
-        dob: new Date(),
+        dob: new Date().toISOString(),
         phone: '',
         gender: '',
         address: '',
@@ -175,12 +209,14 @@ export default function AddStudent() {
         class: '',
         stream: '',
         scienceGroup: '',
-        admissionDate: new Date(),
+        admissionDate: new Date().toISOString(),
         totalFees: '',
         submittedFees: [],
       });
+
+      console.log('handleSave: completed successfully');
     } catch (error) {
-      console.error('Error saving student:', error);
+      console.error('handleSave: error occurred:', error);
       alert('Failed to save student.');
     }
   };
@@ -201,6 +237,7 @@ export default function AddStudent() {
         >
           <Text style={styles.title}>Add Student</Text>
 
+          {/* Name */}
           <TextInput
             style={styles.input}
             placeholder="Name"
@@ -209,6 +246,7 @@ export default function AddStudent() {
             onChangeText={val => handleChange('name', val)}
           />
 
+          {/* Gender */}
           <Text style={styles.label}>Gender</Text>
           <View style={styles.genderContainer}>
             {genderOptions.map(gender => (
@@ -232,26 +270,30 @@ export default function AddStudent() {
             ))}
           </View>
 
+          {/* Date of Birth */}
           <Text style={styles.label}>Date of Birth</Text>
           <TouchableOpacity
             style={styles.datePicker}
             onPress={() => setDobPicker(true)}
           >
-            <Text style={styles.dateText}>{form.dob.toDateString()}</Text>
+            <Text style={styles.dateText}>
+              {form.dob ? parseDate(form.dob).toDateString() : 'Select DOB'}
+            </Text>
           </TouchableOpacity>
           {dobPicker && (
             <DateTimePicker
-              value={form.dob}
+              value={parseDate(form.dob)}
               mode="date"
               display="default"
-              onChange={(event, date) => {
+              onChange={(e, date) => {
                 setDobPicker(Platform.OS === 'ios');
-                if (date) handleChange('dob', date);
+                if (date) handleChange('dob', date.toISOString());
               }}
               maximumDate={new Date()}
             />
           )}
 
+          {/* Phone */}
           <TextInput
             style={styles.input}
             placeholder="Phone"
@@ -261,6 +303,7 @@ export default function AddStudent() {
             onChangeText={val => handleChange('phone', val)}
           />
 
+          {/* Address */}
           <TextInput
             style={[styles.input, { minHeight: 60 }]}
             placeholder="Address"
@@ -270,6 +313,7 @@ export default function AddStudent() {
             onChangeText={val => handleChange('address', val)}
           />
 
+          {/* School */}
           <TextInput
             style={styles.input}
             placeholder="School"
@@ -294,7 +338,6 @@ export default function AddStudent() {
               {form.class || 'Choose Class'}
             </Text>
           </TouchableOpacity>
-
           <Modal
             visible={classModal}
             transparent
@@ -357,7 +400,6 @@ export default function AddStudent() {
                   {form.stream || 'Choose Stream'}
                 </Text>
               </TouchableOpacity>
-
               <Modal
                 visible={streamModal}
                 transparent
@@ -441,17 +483,19 @@ export default function AddStudent() {
             onPress={() => setAdmissionPicker(true)}
           >
             <Text style={styles.dateText}>
-              {form.admissionDate.toDateString()}
+              {form.admissionDate
+                ? parseDate(form.admissionDate).toDateString()
+                : 'Select Date'}
             </Text>
           </TouchableOpacity>
           {admissionPicker && (
             <DateTimePicker
-              value={form.admissionDate}
+              value={parseDate(form.admissionDate)}
               mode="date"
               display="default"
-              onChange={(event, date) => {
+              onChange={(e, date) => {
                 setAdmissionPicker(Platform.OS === 'ios');
-                if (date) handleChange('admissionDate', date);
+                if (date) handleChange('admissionDate', date.toISOString());
               }}
               maximumDate={new Date()}
             />
@@ -467,7 +511,7 @@ export default function AddStudent() {
             onChangeText={val => handleChange('totalFees', val)}
           />
 
-          {/* Add Fee Button + Listed Fees */}
+          {/* Add Fee Button */}
           <Animatable.View animation="bounceIn" duration={600}>
             <TouchableOpacity
               style={styles.feeButton}
@@ -477,10 +521,13 @@ export default function AddStudent() {
             </TouchableOpacity>
           </Animatable.View>
 
+          {/* Remaining Fees */}
           <Text style={styles.label}>
-            Remaining Fees: ₹{remainingFees.toFixed(2)}
+            Remaining Fees: ₹
+            {isNaN(remainingFees) ? '0.00' : remainingFees.toFixed(2)}
           </Text>
 
+          {/* Fee List */}
           <FlatList
             data={form.submittedFees}
             keyExtractor={(_, index) => index.toString()}
@@ -537,11 +584,15 @@ export default function AddStudent() {
                   style={styles.datePicker}
                   onPress={() => setFeeDatePicker(true)}
                 >
-                  <Text style={styles.dateText}>{feeDate.toDateString()}</Text>
+                  <Text style={styles.dateText}>
+                    {feeDate
+                      ? feeDate.toDateString()
+                      : new Date().toDateString()}
+                  </Text>
                 </TouchableOpacity>
                 {feeDatePicker && (
                   <DateTimePicker
-                    value={feeDate}
+                    value={feeDate || new Date()}
                     mode="date"
                     display="default"
                     onChange={(e, date) => {
@@ -585,23 +636,23 @@ export default function AddStudent() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Success Pop-up */}
+      {/* Success Popup */}
       {showSuccess && (
         <Animatable.View
           ref={successPopRef}
           style={[styles.successPopup, { backgroundColor: colors.success }]}
-          useNativeDriver
+          useNativeDriver={false}
           pointerEvents="none"
         >
           <Text
             style={{
-              color: colors.text,
+              color: colors.background,
               fontWeight: 'bold',
               fontSize: sWidth * 0.05,
               textAlign: 'center',
             }}
           >
-            Student added successfully!
+            Student Added
           </Text>
         </Animatable.View>
       )}
@@ -635,15 +686,15 @@ const getStyles = colors =>
       marginBottom: 16,
     },
     label: {
-      fontWeight: '700',
       fontSize: 16,
+      fontWeight: '700',
       color: colors.text,
       marginBottom: 8,
     },
     genderContainer: {
       flexDirection: 'row',
-      marginBottom: 24,
       justifyContent: 'space-between',
+      marginBottom: 24,
     },
     genderOption: {
       flex: 1,
@@ -685,7 +736,7 @@ const getStyles = colors =>
       borderWidth: 1,
       borderRadius: 12,
       padding: 14,
-      marginBottom: 16,
+      marginBottom: 24,
     },
     dropdownTextPlaceholder: {
       color: colors.placeholder,
@@ -706,7 +757,7 @@ const getStyles = colors =>
       backgroundColor: colors.card,
       borderRadius: 18,
       paddingVertical: 18,
-      paddingHorizontal: 22,
+      paddingHorizontal: 24,
       maxHeight: '50%',
     },
     option: {
@@ -727,49 +778,46 @@ const getStyles = colors =>
     },
     feeButton: {
       backgroundColor: colors.accent,
-      borderRadius: 16,
+      borderRadius: 20,
       paddingVertical: 14,
-      marginTop: 10,
-      marginBottom: 16,
+      marginTop: 16,
+      marginBottom: 8,
       alignItems: 'center',
     },
     feeButtonText: {
+      fontSize: 16,
       fontWeight: '700',
       color: colors.buttonText,
-      fontSize: 16,
     },
     feeItem: {
       backgroundColor: colors.card,
       borderRadius: 12,
-      padding: 16,
-      marginBottom: 12,
+      padding: 14,
+      marginVertical: 6,
     },
     feeItemText: {
-      fontSize: 16,
-      fontWeight: '600',
       color: colors.accent,
+      fontWeight: '600',
+      fontSize: 16,
     },
     saveButton: {
-      borderRadius: 20,
-      paddingVertical: 18,
+      borderRadius: 24,
+      paddingVertical: 20,
+      marginTop: 24,
       alignItems: 'center',
     },
     saveButtonText: {
+      fontSize: 20,
       fontWeight: '700',
-      fontSize: 18,
     },
     successPopup: {
       position: 'absolute',
-      bottom: sHeight * 0.3,
+      bottom: sHeight * 0.25,
       alignSelf: 'center',
-      paddingVertical: 18,
-      paddingHorizontal: 52,
-      borderRadius: 20,
+      paddingVertical: 16,
+      paddingHorizontal: 56,
+      borderRadius: 24,
       zIndex: 9999,
-      elevation: 10,
-      shadowColor: '#000',
-      shadowOpacity: 0.2,
-      shadowRadius: 6,
-      shadowOffset: { width: 0, height: 3 },
+      elevation: 20,
     },
   });

@@ -28,7 +28,7 @@ const features = [
     icon: 'calendar-check-outline',
     screen: 'Attendance',
   },
-  { id: '6', title: 'Fees', icon: 'currency-inr', screen: 'Fees' },
+  { id: '6', title: 'Fees', icon: 'currency-inr', screen: 'FeeStructure' },
 ];
 
 const Dashboard = ({ navigation }) => {

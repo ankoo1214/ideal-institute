@@ -7,6 +7,9 @@ import StudentList from '../screens/StudentList';
 import EditStudent from '../screens/EditStudent';
 import { useTheme } from '../theme/ThemeContext'; // Adjust import path accordingly
 import { NavigationContainer } from '@react-navigation/native';
+import FeesStructure from '../components/FeeStructure';
+import Batches from '../components/Batches';
+import Teachers from '../components/Teachers';
 
 const Stack = createNativeStackNavigator();
 
@@ -47,6 +50,21 @@ export default function StackNav() {
           name="StudentList"
           component={StudentList}
           options={{ title: 'Students' }}
+        />
+        <Stack.Screen
+          name="FeeStructure"
+          component={FeesStructure}
+          options={{ title: 'Fee Structure' }}
+        />
+        <Stack.Screen
+          name="Batches"
+          component={Batches}
+          options={{ title: 'Batches' }}
+        />
+        <Stack.Screen
+          name="Teachers"
+          component={Teachers}
+          options={{ title: 'Teachers' }}
         />
       </Stack.Navigator>
     </NavigationContainer>
