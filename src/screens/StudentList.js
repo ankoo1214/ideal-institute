@@ -421,12 +421,15 @@ export default function StudentList() {
                   }
                 >
                   <Text
-                    style={[
-                      styles.filterOptionText,
-                      selectedClasses.includes(cls) && {
-                        color: colors.buttonText,
-                      },
-                    ]}
+                    style={
+                      ([
+                        styles.filterOptionText,
+                        selectedClasses.includes(cls) && {
+                          color: colors.buttonText,
+                        },
+                      ],
+                      { color: colors.text })
+                    }
                   >
                     {cls}
                   </Text>
@@ -457,12 +460,15 @@ export default function StudentList() {
                   }
                 >
                   <Text
-                    style={[
-                      styles.filterOptionText,
-                      selectedStreams.includes(stream) && {
-                        color: colors.buttonText,
-                      },
-                    ]}
+                    style={
+                      ([
+                        styles.filterOptionText,
+                        selectedStreams.includes(stream) && {
+                          color: colors.buttonText,
+                        },
+                      ],
+                      { color: colors.text })
+                    }
                   >
                     {stream}
                   </Text>
@@ -675,7 +681,7 @@ const styles = StyleSheet.create({
   filterOptionText: {
     fontSize: sWidth * 0.043,
     fontWeight: '600',
-    color: '#333',
+    // color: colors.text,
   },
   applyButton: {
     marginTop: 20,
