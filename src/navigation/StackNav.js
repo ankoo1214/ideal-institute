@@ -9,7 +9,8 @@ import { useTheme } from '../theme/ThemeContext'; // Adjust import path accordin
 import { NavigationContainer } from '@react-navigation/native';
 import FeesStructure from '../components/FeeStructure';
 import Batches from '../components/Batches';
-import Teachers from '../components/Teachers';
+import Faculties from '../components/Faculties';
+import AddMenu from '../components/AddMenu';
 
 const Stack = createNativeStackNavigator();
 
@@ -62,10 +63,15 @@ export default function StackNav() {
           options={{ title: 'Batches' }}
         />
         <Stack.Screen
-          name="Teachers"
-          component={Teachers}
-          options={{ title: 'Teachers' }}
+          name="Faculties"
+          component={Faculties}
+          options={{ title: 'Faculties' }}
         />
+        {/* <Stack.Screen
+          name="AddMenu"
+          component={AddMenu}
+          options={{ title: 'Add Menu' }}
+        /> */}
       </Stack.Navigator>
     </NavigationContainer>
   );

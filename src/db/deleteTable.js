@@ -1,5 +1,5 @@
 import db from './createTable';
-export const dropStudentTable = tableName => {
+export const dropTable = tableName => {
   return new Promise((resolve, reject) => {
     db.transaction(tx => {
       tx.executeSql(

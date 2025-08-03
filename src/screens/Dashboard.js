@@ -25,14 +25,14 @@ const features = [
     icon: 'account-group-outline',
     screen: 'StudentList',
   },
-  { id: '2', title: 'Teachers', icon: 'teach', screen: 'Teachers' },
+  { id: '2', title: 'Faculties', icon: 'teach', screen: 'Faculties' },
   { id: '3', title: 'Batches', icon: 'timetable', screen: 'Batches' },
   { id: '4', title: 'Results', icon: 'file-chart-outline', screen: 'Results' },
   {
     id: '5',
-    title: 'Attendance',
+    title: 'AddMenu',
     icon: 'calendar-check-outline',
-    screen: 'Attendance',
+    screen: 'AddMenu',
   },
   { id: '6', title: 'Fees', icon: 'currency-inr', screen: 'FeeStructure' },
 ];
@@ -76,7 +76,11 @@ const DashboardHeader = ({ name = 'My Institute', onLogoPress }) => {
 const Dashboard = ({ navigation }) => {
   const { colors } = useTheme();
 
-  const renderItem = ({ item }) => (
+const renderItem = ({ item }) => {
+  // Optionally override the icon for Teachers card:
+  const iconName = item.title === 'Faculties' ? 'account-tie' : item.icon;
+
+  return (
     <TouchableOpacity
       style={[
         styles.card,
@@ -89,12 +93,14 @@ const Dashboard = ({ navigation }) => {
       onPress={() => navigation.navigate(item.screen)}
       activeOpacity={0.78}
     >
-      <Icon name={item.icon} size={sWidth * 0.1} color={colors.accent} />
+      <Icon name={iconName} size={sWidth * 0.1} color={colors.accent} />
       <Text style={[styles.cardText, { color: colors.text }]}>
         {item.title}
       </Text>
     </TouchableOpacity>
   );
+};
+
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

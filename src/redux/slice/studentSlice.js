@@ -1,29 +1,45 @@
 import { createSlice } from '@reduxjs/toolkit';
+import {
+  addStudentAsync,
+  updateStudentAsync,
+  deleteStudentAsync,
+  fetchStudentsAsync,
+} from '../thunk/studentThunk';
+
+const initialState = [];
 
 const studentSlice = createSlice({
   name: 'students',
-  initialState: [],
+  initialState,
   reducers: {
-    addStudent: (state, action) => {
-      state.push(action.payload);
-    },
-    setStudents: (state, action) => {
+    setStudents(state, action) {
       return action.payload;
     },
-    updateStudent: (state, action) => {
-      const { id, changes } = action.payload;
-      const index = state.findIndex(s => s.id === id);
-      if (index !== -1) {
-        state[index] = { ...state[index], ...changes };
-      }
-    },
-    deleteStudent: (state, action) => {
-      const id = action.payload;
-      return state.filter(student => student.id !== id);
-    },
+  },
+  extraReducers: builder => {
+    builder
+      .addCase(fetchStudentsAsync.fulfilled, (state, action) => {
+        // Replace the existing state with fetched students
+        return action.payload;
+      })
+      .addCase(addStudentAsync.fulfilled, (state, action) => {
+        // Add new student to state
+        state.push(action.payload);
+      })
+      .addCase(updateStudentAsync.fulfilled, (state, action) => {
+        const { id, changes } = action.payload;
+        const index = state.findIndex(s => s.id === id);
+        if (index >= 0) {
+          state[index] = { ...state[index], ...changes };
+        }
+      })
+      .addCase(deleteStudentAsync.fulfilled, (state, action) => {
+        const id = action.payload;
+        return state.filter(s => s.id !== id);
+      });
+    // Optionally, handle pending and rejected states for loading & error UI
   },
 });
 
-export const { addStudent, setStudents, updateStudent, deleteStudent } =
-  studentSlice.actions;
+export const { setStudents } = studentSlice.actions;
 export default studentSlice.reducer;

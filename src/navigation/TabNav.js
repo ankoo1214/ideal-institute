@@ -43,15 +43,20 @@ export default function TabNav() {
         tabBarStyle: {
           height: 60,
           paddingBottom: 5,
-          backgroundColor: colors.card, // background color of tab bar adapts to theme
-          borderTopColor: colors.border, // border color adapting to theme
+          backgroundColor: colors.card,
+          borderTopColor: colors.border,
           borderTopWidth: 1,
-          elevation: 8, // shadow for Android
-          shadowColor: '#000', // shadow for iOS
-          shadowOpacity: 0.1,
-          shadowRadius: 6,
-          shadowOffset: { width: 0, height: -2 },
+
+          // Stronger shadow for iOS:
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -5 },
+          shadowOpacity: 0.3,
+          shadowRadius: 10,
+
+          // Stronger elevation for Android
+          elevation: 12,
         },
+
         tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
       })}
     >

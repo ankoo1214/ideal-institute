@@ -22,7 +22,7 @@ import { setStudents, deleteStudent } from '../redux/slice/studentSlice';
 import { deleteStudentFromDb } from '../db/deleteQuery';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeContext';
-
+import { fetchStudentsAsync } from '../redux/thunk/studentThunk';
 const classOptions = Array.from({ length: 8 }, (_, i) => `${i + 5}`);
 const streamOptions = ['Science', 'Commerce', 'Arts'];
 
@@ -62,6 +62,7 @@ export default function StudentList() {
 
   // Fetch students from DB on mount and refresh
   useEffect(() => {
+    dispatch(fetchStudentsAsync());
     loadStudents();
 
     // Cleanup keyboard listener
@@ -77,7 +78,7 @@ export default function StudentList() {
   async function loadStudents() {
     try {
       const storedStudents = await fetchTable('STUDENTS');
-      dispatch(setStudents(storedStudents));
+
       console.log('Fetched Students:>', storedStudents);
     } catch (error) {
       console.error('Failed to load students:', error);

@@ -20,6 +20,7 @@ import { insertTable } from '../db/insertTable';
 import { createTable } from '../db/createTable';
 import { addStudent } from '../redux/slice/studentSlice';
 import { useTheme } from '../theme/ThemeContext';
+import { addStudentAsync } from '../redux/thunk/studentThunk';
 
 const { width } = Dimensions.get('window');
 const sWidth = width;
@@ -175,7 +176,7 @@ export default function AddStudent() {
 
     try {
       console.log('handleSave: dispatching addStudent');
-      dispatch(addStudent(studentToSave));
+      dispatch(addStudentAsync(studentToSave));
 
       console.log('handleSave: calling insertTable...');
       await insertTable('STUDENTS', studentToSave);
