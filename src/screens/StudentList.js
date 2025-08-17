@@ -10,7 +10,9 @@ import {
   Modal,
   Keyboard,
   Platform,
+  ActivityIndicator,
   KeyboardAvoidingView,
+  Alert,
 } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import * as Animatable from 'react-native-animatable';
@@ -22,7 +24,11 @@ import { setStudents, deleteStudent } from '../redux/slice/studentSlice';
 import { deleteStudentFromDb } from '../db/deleteQuery';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeContext';
-import { fetchStudentsAsync } from '../redux/thunk/studentThunk';
+import NetInfo from '@react-native-community/netinfo';
+import {
+  deleteStudentAsync,
+  fetchStudentsAsync,
+} from '../redux/thunk/studentThunk';
 const classOptions = Array.from({ length: 8 }, (_, i) => `${i + 5}`);
 const streamOptions = ['Science', 'Commerce', 'Arts'];
 
@@ -44,6 +50,9 @@ export default function StudentList() {
   const { colors } = useTheme();
 
   // States
+  const [successMessageVisible, setSuccessMessageVisible] = useState(false);
+  const [loading, setLoading] = useState(true);
+
   const [refreshing, setRefreshing] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [filterModalVisible, setFilterModalVisible] = useState(false);
@@ -62,6 +71,7 @@ export default function StudentList() {
 
   // Fetch students from DB on mount and refresh
   useEffect(() => {
+    checkNetwork();
     dispatch(fetchStudentsAsync());
     loadStudents();
 
@@ -74,7 +84,19 @@ export default function StudentList() {
       keyboardDidHideListenerRef.current &&
       keyboardDidHideListenerRef.current.remove();
   }, []);
+  useEffect(() => {}, []);
 
+  const checkNetwork = async () => {
+    const netState = await NetInfo.fetch();
+    console.log('Net Status:>', netState);
+    if (!netState.isConnected) {
+      Alert.alert(
+        'No Internet',
+        'Please connect to the internet to properly use the app.',
+      );
+      return;
+    }
+  };
   async function loadStudents() {
     try {
       const storedStudents = await fetchTable('STUDENTS');
@@ -166,19 +188,26 @@ export default function StudentList() {
   const confirmDelete = student => {
     setConfirmModal({ visible: true, student });
   };
+  useEffect(() => {
+    setLoading(true);
+    dispatch(fetchStudentsAsync()).finally(() => {
+      setLoading(false);
+    });
+  }, []);
 
   async function doDelete() {
-    console.log('Confirm Modal:>', confirmModal);
     const student = confirmModal.student;
     if (!student) return;
 
     try {
       await deleteStudentFromDb(student.id);
-      console.log('Student ID:>', student);
-      dispatch(deleteStudent(student.id));
+      dispatch(deleteStudentAsync(student.id));
+      dispatch(fetchStudentsAsync());
+      setSuccessMessageVisible(true);
+
+      setTimeout(() => setSuccessMessageVisible(false), 2000); // hide after 2s
     } catch (error) {
       console.error('Delete failed:', error);
-      // Optionally show error toast
     }
     setConfirmModal({ visible: false, student: null });
   }
@@ -371,11 +400,12 @@ export default function StudentList() {
                   <Text
                     style={[
                       styles.sortOptionText,
-                      sortField === opt.field &&
-                        sortAscending === opt.ascending && {
-                          color: colors.accent,
-                          fontWeight: '700',
-                        },
+                      sortField === opt.field && sortAscending === opt.ascending
+                        ? {
+                            color: colors.accent,
+                            fontWeight: '700',
+                          }
+                        : { color: colors.text },
                     ]}
                   >
                     {opt.label}
@@ -482,9 +512,7 @@ export default function StudentList() {
               onPress={() => setFilterModalVisible(false)}
               activeOpacity={0.8}
             >
-              <Text
-                style={[styles.applyButtonText, { color: colors.buttonText }]}
-              >
+              <Text style={[styles.applyButtonText, { color: colors.text }]}>
                 Apply Filters
               </Text>
             </TouchableOpacity>
@@ -539,9 +567,29 @@ export default function StudentList() {
           </Animatable.View>
         </View>
       </Modal>
+      {successMessageVisible && (
+        <Animatable.View
+          animation="fadeInDown"
+          duration={400}
+          style={[styles.toastContainer, { backgroundColor: colors.success }]}
+        >
+          <Text style={[styles.toastText, { color: colors.background }]}>
+            Student deleted successfully!
+          </Text>
+        </Animatable.View>
+      )}
 
       {/* Student List */}
-      {filteredSortedStudents.length === 0 ? (
+      {loading ? (
+        <View
+          style={[
+            styles.loaderContainer,
+            { backgroundColor: colors.background },
+          ]}
+        >
+          <ActivityIndicator size="large" color={colors.accent} />
+        </View>
+      ) : filteredSortedStudents.length === 0 ? (
         <View
           style={[
             styles.emptyContainer,
@@ -580,6 +628,7 @@ export default function StudentList() {
 // Styles
 const styles = StyleSheet.create({
   container: { flex: 1 },
+
   searchContainer: {
     flexDirection: 'row',
     paddingHorizontal: sWidth * 0.04,
@@ -593,8 +642,8 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: sWidth * 0.02,
     fontSize: sWidth * 0.045,
-    // height: sHeight * 0.04,
   },
+
   filterSortBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -614,13 +663,14 @@ const styles = StyleSheet.create({
     fontSize: sWidth * 0.042,
     marginLeft: sWidth * 0.018,
   },
+
   badge: {
     backgroundColor: '#d43a3a',
-    borderRadius: 10,
-    paddingHorizontal: 7,
-    paddingVertical: 1,
-    marginLeft: 6,
-    minWidth: 22,
+    borderRadius: sWidth * 0.025,
+    paddingHorizontal: sWidth * 0.018,
+    paddingVertical: sHeight * 0.003,
+    marginLeft: sWidth * 0.015,
+    minWidth: sWidth * 0.06,
     alignItems: 'center',
   },
   badgeText: {
@@ -628,20 +678,21 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: sWidth * 0.035,
   },
+
   sortDropdown: {
-    marginTop: 7,
-    width: 185,
+    marginTop: sHeight * 0.009,
+    width: sWidth * 0.5,
     borderRadius: sWidth * 0.024,
     borderWidth: 1,
     elevation: 6,
     zIndex: 50,
     alignSelf: 'flex-end',
-    paddingVertical: 6,
+    paddingVertical: sHeight * 0.008,
     position: 'absolute',
   },
   sortOption: {
     paddingVertical: sHeight * 0.012,
-    paddingHorizontal: 15,
+    paddingHorizontal: sWidth * 0.04,
     borderRadius: sWidth * 0.027,
   },
   sortOptionSelected: {
@@ -651,6 +702,7 @@ const styles = StyleSheet.create({
     fontSize: sWidth * 0.045,
     color: '#444',
   },
+
   modalOverlay: {
     flex: 1,
     backgroundColor: '#000000aa',
@@ -669,25 +721,25 @@ const styles = StyleSheet.create({
   optionsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginTop: 10,
+    marginTop: sHeight * 0.012,
   },
   filterOption: {
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: sWidth * 0.03,
-    paddingHorizontal: 15,
-    paddingVertical: 10,
+    paddingHorizontal: sWidth * 0.04,
+    paddingVertical: sHeight * 0.014,
     marginRight: sWidth * 0.03,
-    marginBottom: 12,
+    marginBottom: sHeight * 0.015,
   },
   filterOptionText: {
     fontSize: sWidth * 0.043,
     fontWeight: '600',
-    // color: colors.text,
   },
+
   applyButton: {
-    marginTop: 20,
-    paddingVertical: 16,
+    marginTop: sHeight * 0.025,
+    paddingVertical: sHeight * 0.022,
     borderRadius: sWidth * 0.03,
     alignItems: 'center',
   },
@@ -695,20 +747,22 @@ const styles = StyleSheet.create({
     fontSize: sWidth * 0.045,
     fontWeight: '700',
   },
+
   listContainer: {
     paddingHorizontal: sWidth * 0.05,
     paddingBottom: sHeight * 0.03,
   },
   itemContainer: {
-    marginBottom: 16,
+    marginBottom: sHeight * 0.02,
     borderRadius: sWidth * 0.03,
-    padding: 15,
+    padding: sWidth * 0.04,
     elevation: 4,
-    shadowRadius: 6,
+    shadowRadius: sWidth * 0.02,
     shadowOpacity: 0.15,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: sHeight * 0.003 },
   },
+
   infoActionWrap: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -716,21 +770,22 @@ const styles = StyleSheet.create({
   name: {
     fontWeight: 'bold',
     fontSize: sWidth * 0.05,
-    marginBottom: 6,
+    marginBottom: sHeight * 0.008,
   },
   actionButtons: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: 12,
+    marginLeft: sWidth * 0.03,
     alignSelf: 'flex-start',
   },
   editButton: {
-    marginRight: 12,
-    padding: 5,
+    marginRight: sWidth * 0.03,
+    padding: sWidth * 0.014,
   },
   deleteButton: {
-    padding: 5,
+    padding: sWidth * 0.014,
   },
+
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -741,6 +796,7 @@ const styles = StyleSheet.create({
     fontSize: sWidth * 0.045,
     color: '#888',
   },
+
   modalCenterer: {
     flex: 1,
     backgroundColor: '#00000088',
@@ -749,27 +805,46 @@ const styles = StyleSheet.create({
   },
   confirmModalCard: {
     width: '80%',
-    padding: 24,
-    borderRadius: 14,
+    padding: sWidth * 0.06,
+    borderRadius: sWidth * 0.035,
     elevation: 7,
   },
   confirmModalTitle: {
     fontSize: sWidth * 0.055,
     fontWeight: 'bold',
-    marginBottom: 14,
+    marginBottom: sHeight * 0.018,
   },
   confirmModalMsg: {
     fontSize: sWidth * 0.046,
-    marginBottom: 20,
+    marginBottom: sHeight * 0.026,
   },
   confirmModalCancel: {
     fontSize: sWidth * 0.045,
     color: '#888',
-    marginRight: 18,
+    marginRight: sWidth * 0.045,
   },
   confirmModalDelete: {
     fontSize: sWidth * 0.047,
     color: '#d32f2f',
     fontWeight: '700',
+  },
+  toastContainer: {
+    position: 'absolute',
+    top: sHeight * 0.5,
+    alignSelf: 'center',
+    paddingVertical: sHeight * 0.015,
+    paddingHorizontal: sWidth * 0.1,
+    borderRadius: sWidth * 0.04,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: sWidth * 0.03,
+    shadowOffset: { width: 0, height: sHeight * 0.008 },
+    zIndex: 1000,
+  },
+  toastText: {
+    fontSize: sWidth * 0.045,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });

@@ -10,6 +10,7 @@ import {
   Modal,
   FlatList,
   StyleSheet,
+  TouchableWithoutFeedback,
   Dimensions,
   Keyboard,
 } from 'react-native';
@@ -21,7 +22,8 @@ import { createTable } from '../db/createTable';
 import { addStudent } from '../redux/slice/studentSlice';
 import { useTheme } from '../theme/ThemeContext';
 import { addStudentAsync } from '../redux/thunk/studentThunk';
-
+import CustomTSDropdown from '../components/CustomTSDropdown';
+import NetInfo from '@react-native-community/netinfo';
 const { width } = Dimensions.get('window');
 const sWidth = width;
 const sHeight = Dimensions.get('window').height;
@@ -34,6 +36,22 @@ const genderOptions = ['Male', 'Female', 'Other'];
 export default function AddStudent() {
   const dispatch = useDispatch();
   const students = useSelector(state => state.students) || [];
+  const [schoolOptions, setSchoolOptions] = useState([
+    'Central High School',
+    'Greenwood Academy',
+    'Riverdale Public School',
+    'Sunnyvale School',
+    'Oakridge International',
+    'Springfield High',
+    'Hilltop School',
+    'Cedar Valley',
+    'Lakeside Academy',
+    'Other',
+  ]);
+
+  const [addOtherSchoolVisible, setAddOtherSchoolVisible] = useState(false);
+  const [otherSchoolValue, setOtherSchoolValue] = useState('');
+
   const { colors } = useTheme();
 
   const [form, setForm] = useState({
@@ -82,6 +100,25 @@ export default function AddStudent() {
     const maxId = ids.length > 0 ? Math.max(...ids) : 0;
     return `s${maxId + 1}`;
   }
+  const handleSchoolSelect = value => {
+    if (value === 'Other') {
+      setAddOtherSchoolVisible(true);
+    } else {
+      handleChange('school', value);
+    }
+  };
+
+  const handleAddOtherSchool = () => {
+    if (!otherSchoolValue.trim()) return;
+
+    const newSchool = otherSchoolValue.trim();
+    if (!schoolOptions.includes(newSchool)) {
+      setSchoolOptions([...schoolOptions.slice(0, -1), newSchool, 'Other']);
+    }
+    handleChange('school', newSchool);
+    setOtherSchoolValue('');
+    setAddOtherSchoolVisible(false);
+  };
 
   // Handle field changes; reset science group if stream changes
   const handleChange = (field, value) => {
@@ -147,7 +184,12 @@ export default function AddStudent() {
 
   const handleSave = async () => {
     console.log('handleSave: started');
-
+    const netState = await NetInfo.fetch();
+    console.log('New Status::>', netState);
+    if (!netState.isConnected) {
+      Alert.alert('No Internet', 'Please connect to the internet to proceed.');
+      return;
+    }
     if (!form.name.trim()) {
       console.log('handleSave: name validation failed');
       alert('Please enter student name');
@@ -299,7 +341,9 @@ export default function AddStudent() {
             onPress={() => setDobPicker(true)}
           >
             <Text style={styles.dateText}>
-              {form.dob ? parseDate(form.dob).toDateString() : 'Select DOB'}
+              {form.dob
+                ? parseDate(form.dob).toDateString()
+                : 'Select Date of Birth'}
             </Text>
           </TouchableOpacity>
           {dobPicker && (
@@ -342,12 +386,16 @@ export default function AddStudent() {
           />
 
           {/* School */}
-          <TextInput
-            style={styles.input}
-            placeholder="School"
-            placeholderTextColor={colors.placeholder}
-            value={form.school}
-            onChangeText={val => handleChange('school', val)}
+          <CustomTSDropdown
+            label="School"
+            data={schoolOptions}
+            selectedValue={form.school}
+            onValueChange={handleSchoolSelect}
+            colors={colors}
+            sWidth={sWidth}
+            sHeight={sHeight}
+            placeholder="Select School"
+            style={{ marginBottom: sHeight * 0.02 }}
           />
 
           {/* Class */}
@@ -650,7 +698,8 @@ export default function AddStudent() {
             <TouchableOpacity
               style={[
                 styles.saveButton,
-                { backgroundColor: colors.buttonBackground } ]}
+                { backgroundColor: colors.buttonBackground },
+              ]}
               onPress={handleSave}
             >
               <Text
@@ -661,11 +710,85 @@ export default function AddStudent() {
             </TouchableOpacity>
           </Animatable.View>
         </ScrollView>
-        
+        <Modal
+          visible={addOtherSchoolVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setAddOtherSchoolVisible(false)}
+        >
+          <TouchableWithoutFeedback
+            onPress={() => setAddOtherSchoolVisible(false)}
+          >
+            <View style={modalStyles.overlay}>
+              <TouchableWithoutFeedback>
+                <View
+                  style={[
+                    modalStyles.modalContainer,
+                    { backgroundColor: colors.card },
+                  ]}
+                >
+                  <Text
+                    style={[modalStyles.modalTitle, { color: colors.text }]}
+                  >
+                    Enter new "{otherSchoolValue}"
+                  </Text>
+                  <TextInput
+                    style={[
+                      modalStyles.modalInput,
+                      { borderColor: colors.border, color: colors.text },
+                    ]}
+                    placeholder={`New ${otherSchoolValue}`}
+                    placeholderTextColor={colors.placeholder}
+                    value={otherSchoolValue}
+                    onChangeText={setOtherSchoolValue}
+                    autoFocus
+                    onSubmitEditing={handleAddOtherSchool}
+                  />
+                  <View style={modalStyles.modalButtons}>
+                    <TouchableOpacity
+                      onPress={() => setAddOtherSchoolVisible(false)}
+                      style={[
+                        modalStyles.modalButton,
+                        { backgroundColor: colors.error },
+                      ]}
+                      activeOpacity={0.8}
+                    >
+                      <Text
+                        style={[
+                          modalStyles.modalButtonText,
+                          { color: colors.buttonText },
+                        ]}
+                      >
+                        Cancel
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={handleAddOtherSchool}
+                      style={[
+                        modalStyles.modalButton,
+                        { backgroundColor: colors.accent },
+                      ]}
+                      activeOpacity={0.8}
+                    >
+                      <Text
+                        style={[
+                          modalStyles.modalButtonText,
+                          { color: colors.buttonText },
+                        ]}
+                      >
+                        Add
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </TouchableWithoutFeedback>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
       </KeyboardAvoidingView>
 
       {/* Success Popup */}
-      
+
       {showSuccess && (
         <Animatable.View
           ref={successPopRef}
@@ -808,7 +931,7 @@ const getStyles = colors =>
     feeButton: {
       backgroundColor: colors.accent,
       borderRadius: sWidth * 0.05,
-      paddingVertical: sHeight * 0.018,
+      paddingVertical: sHeight * 0.01,
       marginTop: sHeight * 0.02,
       marginBottom: sHeight * 0.01,
       alignItems: 'center',
@@ -831,7 +954,7 @@ const getStyles = colors =>
     },
     saveButton: {
       borderRadius: sWidth * 0.06,
-      paddingVertical: sHeight * 0.020,
+      paddingVertical: sHeight * 0.02,
       marginTop: sHeight * 0.02,
       alignItems: 'center',
     },
@@ -871,3 +994,46 @@ const getStyles = colors =>
       paddingVertical: sHeight * 0.015,
     },
   });
+
+const modalStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: '#00000088',
+    justifyContent: 'center',
+    paddingHorizontal: sWidth * 0.12,
+  },
+  modalContainer: {
+    borderRadius: sWidth * 0.035,
+    paddingVertical: sWidth * 0.05,
+    paddingHorizontal: sWidth * 0.04,
+  },
+  modalTitle: {
+    fontSize: sWidth * 0.052,
+    fontWeight: '700',
+    marginBottom: sWidth * 0.03,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderRadius: sWidth * 0.03,
+    paddingHorizontal: sWidth * 0.03,
+    paddingVertical: sWidth * 0.04,
+    fontSize: sWidth * 0.045,
+    marginBottom: sWidth * 0.04,
+    width: '100%',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  modalButton: {
+    flex: 1,
+    padding: sWidth * 0.035,
+    borderRadius: sWidth * 0.03,
+    alignItems: 'center',
+    marginHorizontal: sWidth * 0.01,
+  },
+  modalButtonText: {
+    fontWeight: '700',
+    fontSize: sWidth * 0.045,
+  },
+});

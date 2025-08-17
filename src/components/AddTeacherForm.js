@@ -28,7 +28,6 @@ export default function AddTeacherForm({
   initialData = null,
 }) {
   const { colors } = useTheme();
-
   // Dropdown options with "Other"
   const [subjectOptions, setSubjectOptions] = useState([
     'Mathematics',
@@ -402,6 +401,106 @@ export default function AddTeacherForm({
 
   if (!visible) return null;
 
+  const styles = StyleSheet.create({
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.4)', // dim backdrop
+      justifyContent: 'flex-end',
+    },
+    container: {
+      maxHeight: sHeight * 0.85,
+      borderTopLeftRadius: sWidth * 0.08, // Curve top border
+      borderTopRightRadius: sWidth * 0.08,
+      padding: sWidth * 0.06,
+      backgroundColor: 'white', // w
+    },
+    scrollContainer: {
+      paddingBottom: sHeight * 0.06,
+      alignItems: 'center',
+    },
+    header: {
+      fontSize: sWidth * 0.07,
+      fontWeight: '900',
+      marginBottom: sHeight * 0.02,
+      textAlign: 'center',
+    },
+    avatarPick: {
+      width: AVATAR_SIZE,
+      height: AVATAR_SIZE,
+      borderRadius: AVATAR_SIZE / 2,
+      backgroundColor: '#e4eaf7',
+      justifyContent: 'center',
+      alignItems: 'center',
+      alignSelf: 'center',
+      borderWidth: 2,
+      marginBottom: sHeight * 0.012,
+      overflow: 'hidden',
+    },
+    avatarLabel: {
+      marginBottom: sHeight * 0.012,
+      fontSize: 16,
+      color: '#777',
+      alignSelf: 'center',
+    },
+    avatarImage: {
+      width: AVATAR_SIZE,
+      height: AVATAR_SIZE,
+      borderRadius: AVATAR_SIZE / 2,
+    },
+    input: {
+      height: sHeight * 0.065,
+      borderWidth: 1,
+      borderRadius: sWidth * 0.03,
+      paddingHorizontal: sWidth * 0.03,
+      marginBottom: sHeight * 0.018,
+      fontSize: sWidth * 0.045,
+      width: '100%',
+    },
+    buttonRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginTop: sHeight * 0.04,
+    },
+    button: {
+      flex: 1,
+      padding: sWidth * 0.035,
+      borderRadius: sWidth * 0.04,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginHorizontal: sWidth * 0.015,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: sWidth * 0.014 },
+      shadowOpacity: 0.18,
+      shadowRadius: sWidth * 0.04,
+      elevation: 6,
+    },
+    buttonText: {
+      fontWeight: '700',
+      fontSize: sWidth * 0.047,
+    },
+    phoneRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      // backgroundColor: colors.card,
+      borderColor: colors.border,
+      borderWidth: 1,
+      borderRadius: sWidth * 0.03,
+      marginBottom: sHeight * 0.02,
+      paddingHorizontal: sWidth * 0.025,
+    },
+    phonePrefix: {
+      fontSize: sWidth * 0.042,
+      color: colors.text,
+      marginRight: sWidth * 0.02,
+    },
+    phoneInput: {
+      flex: 1,
+      fontSize: sWidth * 0.042,
+      color: colors.text,
+      paddingVertical: sHeight * 0.015,
+    },
+  });
+
   return (
     <>
       <Modal
@@ -440,7 +539,9 @@ export default function AddTeacherForm({
                   </Text>
                 )}
               </TouchableOpacity>
-              <Text style={styles.avatarLabel}>Tap to add image</Text>
+              <Text style={styles.avatarLabel}>
+                {initialData ? 'Tap to edit image' : 'Tap to add image'}
+              </Text>
 
               <TextInput
                 style={[
@@ -464,18 +565,22 @@ export default function AddTeacherForm({
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
-
-              <TextInput
-                style={[
-                  styles.input,
-                  { borderColor: colors.border, color: colors.text },
-                ]}
-                placeholder="Phone"
-                placeholderTextColor={colors.placeholder}
-                value={phone}
-                onChangeText={setPhone}
-                keyboardType="phone-pad"
-              />
+              <View style={styles.phoneRow}>
+                <Text style={styles.phonePrefix}>🇮🇳 +91</Text>
+                <TextInput
+                  style={styles.phoneInput}
+                  placeholder="Phone"
+                  placeholderTextColor={colors.placeholder}
+                  keyboardType="phone-pad"
+                  maxLength={10}
+                  value={phone}
+                  onChangeText={val => {
+                    // Only allow numeric input
+                    const cleaned = val.replace(/[^0-9]/g, '');
+                    setPhone(cleaned);
+                  }}
+                />
+              </View>
 
               <CustomTSDropdown
                 label="Subject *"
@@ -533,9 +638,7 @@ export default function AddTeacherForm({
                   onPress={handleSubmit}
                   activeOpacity={0.8}
                 >
-                  <Text
-                    style={[styles.buttonText, { color: colors.buttonText }]}
-                  >
+                  <Text style={[styles.buttonText, { color: colors.text }]}>
                     {initialData ? 'Save' : 'Add'}
                   </Text>
                 </TouchableOpacity>
@@ -555,9 +658,7 @@ export default function AddTeacherForm({
                   }}
                   activeOpacity={0.8}
                 >
-                  <Text
-                    style={[styles.buttonText, { color: colors.buttonText }]}
-                  >
+                  <Text style={[styles.buttonText, { color: colors.text }]}>
                     Cancel
                   </Text>
                 </TouchableOpacity>
@@ -645,85 +746,6 @@ export default function AddTeacherForm({
 }
 
 const AVATAR_SIZE = sWidth * 0.2;
-
-const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)', // dim backdrop
-    justifyContent: 'flex-end',
-  },
-  container: {
-    maxHeight: sHeight * 0.85,
-    borderTopLeftRadius: sWidth * 0.08, // Curve top border
-    borderTopRightRadius: sWidth * 0.08,
-    padding: sWidth * 0.06,
-    backgroundColor: 'white', // w
-  },
-  scrollContainer: {
-    paddingBottom: sHeight * 0.06,
-    alignItems: 'center',
-  },
-  header: {
-    fontSize: sWidth * 0.07,
-    fontWeight: '900',
-    marginBottom: sHeight * 0.02,
-    textAlign: 'center',
-  },
-  avatarPick: {
-    width: AVATAR_SIZE,
-    height: AVATAR_SIZE,
-    borderRadius: AVATAR_SIZE / 2,
-    backgroundColor: '#e4eaf7',
-    justifyContent: 'center',
-    alignItems: 'center',
-    alignSelf: 'center',
-    borderWidth: 2,
-    marginBottom: sHeight * 0.012,
-    overflow: 'hidden',
-  },
-  avatarLabel: {
-    marginBottom: sHeight * 0.012,
-    fontSize: 16,
-    color: '#777',
-    alignSelf: 'center',
-  },
-  avatarImage: {
-    width: AVATAR_SIZE,
-    height: AVATAR_SIZE,
-    borderRadius: AVATAR_SIZE / 2,
-  },
-  input: {
-    height: sHeight * 0.065,
-    borderWidth: 1,
-    borderRadius: sWidth * 0.03,
-    paddingHorizontal: sWidth * 0.03,
-    marginBottom: sHeight * 0.018,
-    fontSize: sWidth * 0.045,
-    width: '100%',
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: sHeight * 0.04,
-  },
-  button: {
-    flex: 1,
-    padding: sWidth * 0.035,
-    borderRadius: sWidth * 0.04,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginHorizontal: sWidth * 0.015,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: sWidth * 0.014 },
-    shadowOpacity: 0.18,
-    shadowRadius: sWidth * 0.04,
-    elevation: 6,
-  },
-  buttonText: {
-    fontWeight: '700',
-    fontSize: sWidth * 0.047,
-  },
-});
 
 const modalStyles = StyleSheet.create({
   overlay: {

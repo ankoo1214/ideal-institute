@@ -1,9 +1,10 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import { View, Text, StyleSheet, Image, Alert } from 'react-native';
 import * as Animatable from 'react-native-animatable';
 import { useTheme } from '../theme/ThemeContext';
 import { sWidth, sHeight } from '../assets/utils';
 import { dropTable } from '../db/deleteTable';
+import NetInfo from '@react-native-community/netinfo';
 
 const Splash = ({ navigation }) => {
   const { colors } = useTheme();

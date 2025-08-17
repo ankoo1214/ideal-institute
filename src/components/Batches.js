@@ -27,6 +27,7 @@ import { fetchTable } from '../db/fetchTable';
 import { useTheme } from '../theme/ThemeContext';
 import { sWidth, sHeight } from '../assets/utils';
 import BatchForm from './BatchForm';
+import { deleteBatchAsync } from '../redux/thunk/batchThunk';
 
 function groupBatches(data) {
   const grouped = {};
@@ -96,7 +97,7 @@ export default function Batches() {
     if (!batchToDelete) return;
     try {
       await insertOrUpdateBatch({ id: batchToDelete.id, _deleted: 1 }); // Optionally mark deleted for sync
-      dispatch(deleteBatch(batchToDelete.id));
+      dispatch(deleteBatchAsync(batchToDelete.id));
     } catch (e) {
       // handle error
     }

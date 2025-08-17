@@ -1,7 +1,8 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { insertTable } from '../../db/insertTable';
-import { deleteTeacherFromDb } from '../../db/deleteQuery'; // You need to implement
+import { deleteStudentFromDb, deleteTeacherFromDb } from '../../db/deleteQuery'; // You need to implement
 import { fetchTable } from '../../db/fetchTable';
+import { deleteStudent } from '../slice/studentSlice';
 
 const API_URL = 'https://ideal-server-6c83.onrender.com/api/teachers'; // Change to correct URL
 // https://ideal-server-6c83.onrender.com/api/teachers
@@ -18,8 +19,13 @@ export const fetchTeachersAsync = createAsyncThunk(
         throw new Error(errorMsg);
       }
 
-      const teachers = await response.json();
-      console.log(`[fetchTeachersAsync] Received ${teachers.length} teachers.`);
+      let teachers = await response.json();
+
+      // Normalize _id to id for frontend consistency
+      teachers = teachers.map(teacher => ({
+        ...teacher,
+        id: teacher._id,
+      }));
 
       // Save all teachers into SQLite sequentially
       for (const [i, teacher] of teachers.entries()) {
@@ -27,7 +33,7 @@ export const fetchTeachersAsync = createAsyncThunk(
           await insertTable('FACULTIES', teacher);
           console.log(
             `[fetchTeachersAsync] Inserted teacher ${
-              teacher.fId || i
+              teacher.id || i
             } into SQLite.`,
           );
         } catch (sqliteError) {
@@ -40,23 +46,27 @@ export const fetchTeachersAsync = createAsyncThunk(
 
       return teachers;
     } catch (error) {
-      console.warn('[fetchTeachersAsync] API fetch failed:', error.message);
+      console.warn('[fetchTeachersAsync] Fetch failed:', error.message);
 
-      // Fallback: fetch from SQLite DB
+      // Fallback: fetch from SQLite
       try {
         console.log(
-          '[fetchTeachersAsync] Loading teachers from local SQLite as fallback...',
+          '[fetchTeachersAsync] Loading teachers from SQLite fallback...',
         );
-        const sqliteTeachers = await fetchTable('TEACHERS');
+        let sqliteTeachers = await fetchTable('FACULTIES');
+
+        // Normalize local data too if needed
+        sqliteTeachers = sqliteTeachers.map(teacher => ({
+          ...teacher,
+          id: teacher._id || teacher.id,
+        }));
+
         console.log(
           `[fetchTeachersAsync] Loaded ${sqliteTeachers.length} teachers from SQLite.`,
         );
         return sqliteTeachers;
       } catch (sqliteError) {
-        console.error(
-          '[fetchTeachersAsync] Failed to fetch teachers from SQLite:',
-          sqliteError,
-        );
+        console.error('[fetchTeachersAsync] Failed SQLite fetch:', sqliteError);
         return rejectWithValue(
           sqliteError.message ||
             'Failed to fetch teachers from API and SQLite.',
@@ -65,44 +75,38 @@ export const fetchTeachersAsync = createAsyncThunk(
     }
   },
 );
+
 export const addTeacherAsync = createAsyncThunk(
   'teachers/addTeacherAsync',
   async (teacherObj, { rejectWithValue }) => {
     try {
       console.log('Faculty Add:>', teacherObj);
 
-      await insertTable('FACULTIES', teacherObj); // Local SQLite
+      await insertTable('FACULTIES', teacherObj); // Local SQLite save
 
       const formData = new FormData();
 
-      // Append all text fields
+      // Append text fields
       for (const key in teacherObj) {
         if (key !== 'avatar' && teacherObj[key]) {
           formData.append(key, teacherObj[key]);
         }
       }
 
-      // Append image correctly
-      if (
-        teacherObj.avatar &&
-        typeof teacherObj.avatar === 'object' &&
-        teacherObj.avatar.uri
-      ) {
+      // Append avatar
+      if (teacherObj.avatar?.uri) {
         formData.append('avatar', {
           uri: teacherObj.avatar.uri,
           name: teacherObj.avatar.fileName || 'avatar.jpg',
           type: teacherObj.avatar.type || 'image/jpeg',
         });
-      } else {
-        console.warn('⚠️ Avatar is not a valid image object');
+      } else if (typeof teacherObj.avatar === 'string') {
+        formData.append('avatar', teacherObj.avatar);
       }
 
       const response = await fetch(API_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-        body: formData,
+        body: formData, // 👈 No headers, RN sets Content-Type
       });
 
       if (!response.ok) {
@@ -118,6 +122,7 @@ export const addTeacherAsync = createAsyncThunk(
     }
   },
 );
+
 
 export const updateTeacherAsync = createAsyncThunk(
   'teachers/updateTeacherAsync',
@@ -139,22 +144,44 @@ export const updateTeacherAsync = createAsyncThunk(
     }
   },
 );
-
 export const deleteTeacherAsync = createAsyncThunk(
   'teachers/deleteTeacherAsync',
   async (id, { rejectWithValue }) => {
     try {
+      console.log('[deleteTeacherAsync] Deleting teacher with id:', id);
+
+      if (!id) {
+        const errorMsg = 'No valid teacher ID provided for deletion.';
+        console.error('[deleteTeacherAsync]', errorMsg);
+        return rejectWithValue(errorMsg);
+      }
+
       // Delete from local DB
-      await deleteTeacherFromDb(id);
+      const dbResult = await deleteStudentFromDb(id);
+      console.log('[deleteTeacherAsync] Deleted from DB:', dbResult);
 
       // Delete from backend API
-      await fetch(`${API_URL}/${id}`, {
+      const response = await fetch(`${API_URL}/${id}`, {
         method: 'DELETE',
       });
+      console.log('[deleteTeacherAsync] API response status:', response.status);
+
+      if (!response.ok) {
+        const errorPayload = await response.text();
+        console.error(
+          '[deleteTeacherAsync] API deletion failed:',
+          errorPayload,
+        );
+        throw new Error(`API deletion failed: ${errorPayload}`);
+      }
+
+      console.log('[deleteTeacherAsync] Teacher successfully deleted:', id);
 
       return id;
     } catch (error) {
+      console.error('[deleteTeacherAsync] Error during deletion:', error);
       return rejectWithValue(error.message || 'Failed to delete teacher.');
     }
   },
 );
+

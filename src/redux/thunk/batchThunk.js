@@ -21,6 +21,20 @@ export const addBatchAsync = createAsyncThunk(
   },
 );
 
+export const fetchBatchesAsync = createAsyncThunk(
+  'batches/fetchBatchesAsync',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await fetch(API_URL);
+      if (!response.ok) throw new Error('Failed to fetch batches');
+      const data = await response.json();
+      return data;
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  },
+);
+
 export const updateBatchAsync = createAsyncThunk(
   'batches/updateBatchAsync',
   async ({ id, changes }, { rejectWithValue }) => {

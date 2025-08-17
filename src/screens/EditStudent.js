@@ -19,7 +19,8 @@ import { updateStudent } from '../redux/slice/studentSlice';
 import { updateStudentInDb } from '../db/updateQuery';
 import { sHeight, sWidth } from '../assets/utils';
 import { useTheme } from '../theme/ThemeContext';
-
+import NetInfo from '@react-native-community/netinfo';
+import { updateStudentAsync } from '../redux/thunk/studentThunk';
 const classOptions = Array.from({ length: 8 }, (_, i) => `${i + 5}`);
 const streamOptions = ['Science', 'Commerce', 'Arts'];
 const scienceGroups = ['PCM', 'PCB'];
@@ -100,6 +101,12 @@ export default function EditStudent({ route, navigation }) {
   };
 
   const handleSaveChanges = async () => {
+    const netState = await NetInfo.fetch();
+    console.log('New Status::>', netState);
+    if (!netState.isConnected) {
+      Alert.alert('No Internet', 'Please connect to the internet to proceed.');
+      return;
+    }
     try {
       const studentToUpdate = {
         ...form,
@@ -113,7 +120,7 @@ export default function EditStudent({ route, navigation }) {
           : [],
       };
 
-      dispatch(updateStudent({ id: student.id, changes: studentToUpdate }));
+      dispatch(updateStudentAsync({ id: student.id, changes: studentToUpdate }));
       await updateStudentInDb(student.id, studentToUpdate);
 
       alert('Student updated successfully!');

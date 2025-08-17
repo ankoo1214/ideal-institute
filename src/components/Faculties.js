@@ -22,9 +22,10 @@ import {
   fetchTeachersAsync,
   addTeacherAsync,
   updateTeacherAsync,
+  deleteTeacherAsync,
 } from '../redux/thunk/facultyThunk';
 import { Dimensions } from 'react-native';
-
+import { deleteStudentFromDb } from '../db/deleteQuery';
 const sWidth = Dimensions.get('window').width;
 const sHeight = Dimensions.get('window').height;
 
@@ -46,7 +47,7 @@ export default function Faculties() {
   const faculties = useSelector(state => state.faculties.teachers);
   const loading = useSelector(state => state.faculties.loading);
   const error = useSelector(state => state.faculties.error);
-
+  const [successMessageVisible, setSuccessMessageVisible] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState(null);
 
@@ -79,6 +80,17 @@ export default function Faculties() {
       .finally(() => setRefreshing(false));
   }, [dispatch]);
 
+  const normalizeImageUri = uri => {
+    if (!uri) return null;
+    if (uri.startsWith('file://')) {
+      return uri; // local image (picked but not uploaded yet)
+    } else if (uri.startsWith('http')) {
+      return uri; // already a full URL
+    } else {
+      console.log(`https://ideal-server-6c83.onrender.com${uri}`);
+      return `https://ideal-server-6c83.onrender.com${uri}`; // server uploads
+    }
+  };
   const groupedTeachers = groupTeachersByDepartment(faculties || []);
 
   const CARD_HEIGHT = sHeight * 0.13;
@@ -109,7 +121,7 @@ export default function Faculties() {
   async function handleAddOrUpdateTeacher(teacher) {
     try {
       const netState = await NetInfo.fetch();
-
+      console.log('New Status::>', netState);
       if (!netState.isConnected) {
         Alert.alert(
           'No Internet',
@@ -145,8 +157,17 @@ export default function Faculties() {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => {
-            setTeachers(prev => prev.filter(t => t.id !== id));
+          onPress: async () => {
+            try {
+              await dispatch(deleteTeacherAsync(id)).unwrap();
+              setSuccessMessageVisible(true);
+              setTimeout(() => setSuccessMessageVisible(false), 2000);
+            } catch (error) {
+              Alert.alert(
+                'Delete Failed',
+                error.message || 'Failed to delete teacher',
+              );
+            }
           },
         },
       ],
@@ -241,13 +262,7 @@ export default function Faculties() {
                   <View style={styles.avatarContainer}>
                     {teacher.avatar ? (
                       <Image
-                        source={{
-                          uri: (() => {
-                            const uri = `https://ideal-server-6c83.onrender.com${teacher.avatar}`;
-                            console.log('Image URI:', uri);
-                            return uri;
-                          })(),
-                        }}
+                        source={{ uri: normalizeImageUri(teacher.avatar) }}
                         style={[
                           styles.avatar,
                           {
@@ -314,12 +329,15 @@ export default function Faculties() {
                     </TouchableOpacity>
                     <TouchableOpacity
                       // Implement delete logic here if needed
+                      onPress={() => {
+                        handleDeleteTeacher(teacher.id);
+                      }}
                       style={[
                         styles.actionButton,
                         { backgroundColor: '#f44336', marginLeft: 8 },
                       ]}
                     >
-                      <Icon name="trash" size={20} color="#fff" />
+                      <Icon name="trash" size={22} color="#fff" />
                     </TouchableOpacity>
                   </View>
                 </Animatable.View>
@@ -328,6 +346,17 @@ export default function Faculties() {
           </View>
         ))}
       </ScrollView>
+      {successMessageVisible && (
+        <Animatable.View
+          animation="fadeInDown"
+          duration={400}
+          style={[styles.successToast, { backgroundColor: colors.success }]}
+        >
+          <Text style={[styles.successToastText, { color: colors.background }]}>
+            Teacher deleted successfully!
+          </Text>
+        </Animatable.View>
+      )}
 
       {showForm && (
         <AddTeacherForm
@@ -415,7 +444,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   name: {
-    fontSize: sWidth * 0.052,
+    fontSize: sWidth * 0.042,
     fontWeight: '700',
   },
   subject: {
@@ -444,5 +473,24 @@ const styles = StyleSheet.create({
     borderRadius: sWidth * 0.04,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  successToast: {
+    position: 'absolute',
+    top: sHeight * 0.05,
+    alignSelf: 'center',
+    paddingVertical: sHeight * 0.015,
+    paddingHorizontal: sWidth * 0.1,
+    borderRadius: sWidth * 0.04,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: sWidth * 0.03,
+    shadowOffset: { width: 0, height: sHeight * 0.008 },
+    zIndex: 1000,
+  },
+  successToastText: {
+    fontSize: sWidth * 0.045,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });

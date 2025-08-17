@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,11 +6,12 @@ import {
   TouchableOpacity,
   FlatList,
   Image,
+  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../theme/ThemeContext';
 import { sWidth, sHeight } from '../assets/utils';
-
+import NetInfo from '@react-native-community/netinfo';
 // Responsive logo size
 const LOGO_SIZE = sHeight * 0.047;
 const CARD_WIDTH = sWidth / 2 - sWidth * 0.08;
@@ -26,20 +27,35 @@ const features = [
     screen: 'StudentList',
   },
   { id: '2', title: 'Faculties', icon: 'teach', screen: 'Faculties' },
-  { id: '3', title: 'Batches', icon: 'timetable', screen: 'Batches' },
-  { id: '4', title: 'Results', icon: 'file-chart-outline', screen: 'Results' },
-  {
-    id: '5',
-    title: 'AddMenu',
-    icon: 'calendar-check-outline',
-    screen: 'AddMenu',
-  },
+  // { id: '3', title: 'Batches', icon: 'timetable', screen: 'Batches' },
+  // { id: '4', title: 'Results', icon: 'file-chart-outline', screen: 'Results' },1 
+  // {
+  //   id: '5',
+  //   title: 'AddMenu',
+  //   icon: 'calendar-check-outline',
+  //   screen: 'AddMenu',
+  // },
   { id: '6', title: 'Fees', icon: 'currency-inr', screen: 'FeeStructure' },
 ];
 
 // ---- HEADER COMPONENT ----
 const DashboardHeader = ({ name = 'My Institute', onLogoPress }) => {
   const { colors } = useTheme();
+  useEffect(() => {
+    checkNetwork();
+  }, []);
+
+  const checkNetwork = async () => {
+    const netState = await NetInfo.fetch();
+    console.log('New Status::>', netState);
+    if (!netState.isConnected) {
+      Alert.alert(
+        'No Internet',
+        'Please connect to the internet to properly use the app.',
+      );
+      return;
+    }
+  };
 
   return (
     <View
@@ -50,7 +66,7 @@ const DashboardHeader = ({ name = 'My Institute', onLogoPress }) => {
         <Text
           style={[
             headerStyles.title,
-            { color: colors.text, maxWidth: sWidth * 0.5, fontStyle: 'italic' },
+            { color: colors.text, maxWidth: sWidth * 0.5 },
           ]}
           numberOfLines={1}
           ellipsizeMode="tail"
@@ -76,31 +92,30 @@ const DashboardHeader = ({ name = 'My Institute', onLogoPress }) => {
 const Dashboard = ({ navigation }) => {
   const { colors } = useTheme();
 
-const renderItem = ({ item }) => {
-  // Optionally override the icon for Teachers card:
-  const iconName = item.title === 'Faculties' ? 'account-tie' : item.icon;
+  const renderItem = ({ item }) => {
+    // Optionally override the icon for Teachers card:
+    const iconName = item.title === 'Faculties' ? 'account-tie' : item.icon;
 
-  return (
-    <TouchableOpacity
-      style={[
-        styles.card,
-        {
-          backgroundColor: colors.card,
-          shadowColor: colors.border,
-          elevation: 5,
-        },
-      ]}
-      onPress={() => navigation.navigate(item.screen)}
-      activeOpacity={0.78}
-    >
-      <Icon name={iconName} size={sWidth * 0.1} color={colors.accent} />
-      <Text style={[styles.cardText, { color: colors.text }]}>
-        {item.title}
-      </Text>
-    </TouchableOpacity>
-  );
-};
-
+    return (
+      <TouchableOpacity
+        style={[
+          styles.card,
+          {
+            backgroundColor: colors.card,
+            shadowColor: colors.border,
+            elevation: 5,
+          },
+        ]}
+        onPress={() => navigation.navigate(item.screen)}
+        activeOpacity={0.78}
+      >
+        <Icon name={iconName} size={sWidth * 0.1} color={colors.accent} />
+        <Text style={[styles.cardText, { color: colors.text }]}>
+          {item.title}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

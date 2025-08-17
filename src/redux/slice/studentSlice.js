@@ -15,6 +15,10 @@ const studentSlice = createSlice({
     setStudents(state, action) {
       return action.payload;
     },
+    deleteStudent: (state, action) => {
+      // filter out the deleted student by id
+      return state.filter(student => student.id !== action.payload);
+    },
   },
   extraReducers: builder => {
     builder
@@ -41,5 +45,5 @@ const studentSlice = createSlice({
   },
 });
 
-export const { setStudents } = studentSlice.actions;
+export const { setStudents, deleteStudent } = studentSlice.actions;
 export default studentSlice.reducer;
