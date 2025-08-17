@@ -3,7 +3,7 @@ export const updateStudentInDb = (id, studentObj) => {
   return new Promise((resolve, reject) => {
     db.transaction(tx => {
       tx.executeSql(
-        'UPDATE students SET data = ? WHERE id = ?',
+        'UPDATE students SET data = ? WHERE sid = ?',
         [JSON.stringify(studentObj), id],
         (txObj, resultSet) => resolve(resultSet),
         (_, error) => reject(error),

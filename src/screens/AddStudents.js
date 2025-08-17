@@ -133,12 +133,33 @@ export default function AddStudent() {
     dateString ? new Date(dateString) : new Date();
 
   // Save student with serializable dates (ISO strings)
+  // Simple Gmail validation
+  // const isValidGmail = email => {
+  //   const gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+  //   return gmailRegex.test(email.trim());
+  // };
+
+  // Phone validation (10 digits)
+  const isValidIndianPhone = phone => {
+    const phoneRegex = /^[6-9]\d{9}$/; // Starts with 6-9, total 10 digits
+    return phoneRegex.test(phone.trim());
+  };
+
   const handleSave = async () => {
     console.log('handleSave: started');
 
     if (!form.name.trim()) {
       console.log('handleSave: name validation failed');
       alert('Please enter student name');
+      return;
+    }
+    // if (!isValidGmail(form.email)) {
+    //   alert('Please enter a valid Gmail address (example@gmail.com)');
+    //   return;
+    // }
+
+    if (!isValidIndianPhone(form.phone)) {
+      alert('Please enter a valid 10-digit Indian phone number');
       return;
     }
 
@@ -295,14 +316,20 @@ export default function AddStudent() {
           )}
 
           {/* Phone */}
-          <TextInput
-            style={styles.input}
-            placeholder="Phone"
-            placeholderTextColor={colors.placeholder}
-            keyboardType="phone-pad"
-            value={form.phone}
-            onChangeText={val => handleChange('phone', val)}
-          />
+          <View style={styles.phoneRow}>
+            <Text style={styles.phonePrefix}>🇮🇳 +91</Text>
+            <TextInput
+              style={styles.phoneInput}
+              placeholder="Phone"
+              placeholderTextColor={colors.placeholder}
+              keyboardType="phone-pad"
+              value={form.phone}
+              maxLength={10} // allow only 10 digits
+              onChangeText={val =>
+                handleChange('phone', val.replace(/[^0-9]/g, ''))
+              } // numeric only
+            />
+          </View>
 
           {/* Address */}
           <TextInput
@@ -623,8 +650,7 @@ export default function AddStudent() {
             <TouchableOpacity
               style={[
                 styles.saveButton,
-                { backgroundColor: colors.buttonBackground },
-              ]}
+                { backgroundColor: colors.buttonBackground } ]}
               onPress={handleSave}
             >
               <Text
@@ -635,9 +661,11 @@ export default function AddStudent() {
             </TouchableOpacity>
           </Animatable.View>
         </ScrollView>
+        
       </KeyboardAvoidingView>
 
       {/* Success Popup */}
+      
       {showSuccess && (
         <Animatable.View
           ref={successPopRef}
@@ -664,15 +692,15 @@ export default function AddStudent() {
 const getStyles = colors =>
   StyleSheet.create({
     container: {
-      padding: 24,
-      paddingBottom: 60,
+      padding: sWidth * 0.06,
+      paddingBottom: sHeight * 0.08,
       backgroundColor: colors.background,
     },
     title: {
-      fontSize: 32,
+      fontSize: sWidth * 0.055,
       fontWeight: '700',
       color: colors.text,
-      marginBottom: 24,
+      marginBottom: sHeight * 0.02,
       alignSelf: 'center',
       letterSpacing: 2,
     },
@@ -681,29 +709,29 @@ const getStyles = colors =>
       color: colors.text,
       borderWidth: 1,
       borderColor: colors.border,
-      borderRadius: 12,
-      padding: 14,
-      fontSize: 16,
-      marginBottom: 16,
+      borderRadius: sWidth * 0.03,
+      padding: sWidth * 0.035,
+      fontSize: sWidth * 0.042,
+      marginBottom: sHeight * 0.02,
     },
     label: {
-      fontSize: 16,
+      fontSize: sWidth * 0.042,
       fontWeight: '700',
       color: colors.text,
-      marginBottom: 8,
+      marginBottom: sHeight * 0.01,
     },
     genderContainer: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      marginBottom: 24,
+      marginBottom: sHeight * 0.03,
     },
     genderOption: {
       flex: 1,
-      marginHorizontal: 4,
+      marginHorizontal: sWidth * 0.01,
       borderWidth: 1,
-      borderRadius: 12,
+      borderRadius: sWidth * 0.03,
       borderColor: colors.border,
-      paddingVertical: 12,
+      paddingVertical: sHeight * 0.015,
       alignItems: 'center',
       backgroundColor: colors.card,
     },
@@ -714,7 +742,7 @@ const getStyles = colors =>
     genderText: {
       color: colors.text,
       fontWeight: '600',
-      fontSize: 14,
+      fontSize: sWidth * 0.038,
     },
     genderTextSelected: {
       color: colors.buttonText,
@@ -723,29 +751,29 @@ const getStyles = colors =>
       backgroundColor: colors.card,
       borderColor: colors.border,
       borderWidth: 1,
-      borderRadius: 12,
-      padding: 14,
-      marginBottom: 24,
+      borderRadius: sWidth * 0.03,
+      padding: sWidth * 0.035,
+      marginBottom: sHeight * 0.03,
     },
     dateText: {
       color: colors.text,
-      fontSize: 16,
+      fontSize: sWidth * 0.042,
     },
     dropdown: {
       backgroundColor: colors.card,
       borderColor: colors.border,
       borderWidth: 1,
-      borderRadius: 12,
-      padding: 14,
-      marginBottom: 24,
+      borderRadius: sWidth * 0.03,
+      padding: sWidth * 0.035,
+      marginBottom: sHeight * 0.03,
     },
     dropdownTextPlaceholder: {
       color: colors.placeholder,
-      fontSize: 16,
+      fontSize: sWidth * 0.042,
     },
     dropdownTextActive: {
       color: colors.text,
-      fontSize: 16,
+      fontSize: sWidth * 0.042,
     },
     modalOverlay: {
       flex: 1,
@@ -756,18 +784,18 @@ const getStyles = colors =>
     modalBox: {
       width: '85%',
       backgroundColor: colors.card,
-      borderRadius: 18,
-      paddingVertical: 18,
-      paddingHorizontal: 24,
-      maxHeight: '50%',
+      borderRadius: sWidth * 0.04,
+      paddingVertical: sWidth * 0.045,
+      paddingHorizontal: sWidth * 0.06,
+      // maxHeight: '50%',
     },
     option: {
-      paddingVertical: 16,
+      paddingVertical: sHeight * 0.02,
       borderBottomWidth: 1,
       borderColor: colors.border,
     },
     optionText: {
-      fontSize: 16,
+      fontSize: sWidth * 0.042,
       color: colors.text,
     },
     selectedOption: {
@@ -779,46 +807,67 @@ const getStyles = colors =>
     },
     feeButton: {
       backgroundColor: colors.accent,
-      borderRadius: 20,
-      paddingVertical: 14,
-      marginTop: 16,
-      marginBottom: 8,
+      borderRadius: sWidth * 0.05,
+      paddingVertical: sHeight * 0.018,
+      marginTop: sHeight * 0.02,
+      marginBottom: sHeight * 0.01,
       alignItems: 'center',
     },
     feeButtonText: {
-      fontSize: 16,
+      fontSize: sWidth * 0.042,
       fontWeight: '700',
       color: colors.buttonText,
     },
     feeItem: {
       backgroundColor: colors.card,
-      borderRadius: 12,
-      padding: 14,
-      marginVertical: 6,
+      borderRadius: sWidth * 0.03,
+      padding: sWidth * 0.035,
+      marginVertical: sHeight * 0.008,
     },
     feeItemText: {
       color: colors.accent,
       fontWeight: '600',
-      fontSize: 16,
+      fontSize: sWidth * 0.042,
     },
     saveButton: {
-      borderRadius: 24,
-      paddingVertical: 20,
-      marginTop: 24,
+      borderRadius: sWidth * 0.06,
+      paddingVertical: sHeight * 0.020,
+      marginTop: sHeight * 0.02,
       alignItems: 'center',
     },
     saveButtonText: {
-      fontSize: 20,
+      fontSize: sWidth * 0.04,
       fontWeight: '700',
     },
     successPopup: {
       position: 'absolute',
       bottom: sHeight * 0.25,
       alignSelf: 'center',
-      paddingVertical: 16,
-      paddingHorizontal: 56,
-      borderRadius: 24,
+      paddingVertical: sHeight * 0.02,
+      paddingHorizontal: sWidth * 0.15,
+      borderRadius: sWidth * 0.06,
       zIndex: 9999,
       elevation: 20,
+    },
+    phoneRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.card,
+      borderColor: colors.border,
+      borderWidth: 1,
+      borderRadius: sWidth * 0.03,
+      marginBottom: sHeight * 0.02,
+      paddingHorizontal: sWidth * 0.025,
+    },
+    phonePrefix: {
+      fontSize: sWidth * 0.042,
+      color: colors.text,
+      marginRight: sWidth * 0.02,
+    },
+    phoneInput: {
+      flex: 1,
+      fontSize: sWidth * 0.042,
+      color: colors.text,
+      paddingVertical: sHeight * 0.015,
     },
   });

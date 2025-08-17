@@ -1,7 +1,7 @@
 import db from './createTable';
 
 export const insertTable = (tableName, data) => {
-  const sid = data.sid || data.id;
+  const sid = data.sid || data.id || data.fId;
 
   return new Promise((resolve, reject) => {
     db.transaction(tx => {

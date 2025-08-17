@@ -24,7 +24,6 @@ export const fetchStudentsAsync = createAsyncThunk(
 
       // Save each student into SQLite DB
       for (const [index, student] of students.entries()) {
-        7894567612;
         try {
           await insertTable('STUDENTS', student);
           console.log(

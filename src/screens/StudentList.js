@@ -583,7 +583,7 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     paddingHorizontal: sWidth * 0.04,
-    paddingVertical: sHeight * 0.012,
+    paddingVertical: sHeight * 0.005,
     margin: sWidth * 0.05,
     borderRadius: sWidth * 0.04,
     borderWidth: 1,
@@ -593,7 +593,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: sWidth * 0.02,
     fontSize: sWidth * 0.045,
-    height: sHeight * 0.04,
+    // height: sHeight * 0.04,
   },
   filterSortBar: {
     flexDirection: 'row',
@@ -602,6 +602,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: '#ddd',
     marginHorizontal: sWidth * 0.05,
+    marginBottom: sWidth * 0.025,
     paddingHorizontal: sWidth * 0.04,
     paddingVertical: sHeight * 0.012,
   },

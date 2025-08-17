@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,41 +6,29 @@ import {
   ScrollView,
   TouchableWithoutFeedback,
   Image,
-  Dimensions,
   TouchableOpacity,
-  Alert,
+  RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
+import NetInfo from '@react-native-community/netinfo';
+import { Alert } from 'react-native';
+
 import * as Animatable from 'react-native-animatable';
 import { useTheme } from '../theme/ThemeContext';
 import AddTeacherForm from './AddTeacherForm';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  fetchTeachersAsync,
+  addTeacherAsync,
+  updateTeacherAsync,
+} from '../redux/thunk/facultyThunk';
+import { Dimensions } from 'react-native';
 
 const sWidth = Dimensions.get('window').width;
 const sHeight = Dimensions.get('window').height;
 
-const initialTeachers = [
-  {
-    fId: 't1',
-    name: 'Dr. Ankita Mishra',
-    subject: 'Mathematics',
-    department: 'Science',
-    email: 'ankita.mishra@example.com',
-    phone: '9876543210',
-    avatar: null,
-    qualification: 'M.Sc Math',
-  },
-  {
-    fId: 't2',
-    name: 'Mr. Rohit Sharma',
-    subject: 'English',
-    department: 'Languages',
-    email: 'rohit.sharma@example.com',
-    phone: '9123456780',
-    avatar: null,
-  },
-  // ... Your other initial teachers
-];
-
+// Helper to group teachers by department
 function groupTeachersByDepartment(data) {
   const grouped = {};
   data.forEach(teacher => {
@@ -52,15 +40,50 @@ function groupTeachersByDepartment(data) {
 
 export default function Faculties() {
   const { colors } = useTheme();
+  const dispatch = useDispatch();
   const animateRefs = useRef({});
 
-  const [teachers, setTeachers] = useState(initialTeachers);
-  const [showTeacherForm, setShowTeacherForm] = useState(false);
-  const [editingTeacher, setEditingTeacher] = useState(null); // null means add new
+  const faculties = useSelector(state => state.faculties.teachers);
+  const loading = useSelector(state => state.faculties.loading);
+  const error = useSelector(state => state.faculties.error);
 
-  const groupedTeachers = groupTeachersByDepartment(teachers);
+  const [showForm, setShowForm] = useState(false);
+  const [editingTeacher, setEditingTeacher] = useState(null);
 
-  // Animations on press
+  // Local state for pull-to-refresh
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Fetch data when component mounts
+  useEffect(() => {
+    const checkConnectionAndFetch = async () => {
+      const netState = await NetInfo.fetch();
+
+      if (netState.isConnected) {
+        dispatch(fetchTeachersAsync());
+      } else {
+        Alert.alert(
+          'No Internet',
+          'Please connect to the internet to fetch teacher data.',
+        );
+      }
+    };
+
+    checkConnectionAndFetch();
+  }, [dispatch]);
+
+  // Pull-to-refresh handler
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    dispatch(fetchTeachersAsync())
+      .unwrap()
+      .finally(() => setRefreshing(false));
+  }, [dispatch]);
+
+  const groupedTeachers = groupTeachersByDepartment(faculties || []);
+
+  const CARD_HEIGHT = sHeight * 0.13;
+  const AVATAR_SIZE = CARD_HEIGHT * 0.62;
+
   function onPressIn(id) {
     if (animateRefs.current[id]) {
       animateRefs.current[id].animate(
@@ -78,27 +101,38 @@ export default function Faculties() {
     }
   }
 
-  // Open form for adding new or editing teacher
   function openForm(forTeacher = null) {
     setEditingTeacher(forTeacher);
-    setShowTeacherForm(true);
+    setShowForm(true);
   }
 
-  // When form submits, add or update teacher in list
-  function handleAddOrUpdateTeacher(teacher) {
-    setTeachers(prevTeachers => {
-      const idx = prevTeachers.findIndex(t => t.fId === teacher.fId);
-      if (idx >= 0) {
-        // Update teacher
-        const updated = [...prevTeachers];
-        updated[idx] = teacher;
-        return updated;
+  async function handleAddOrUpdateTeacher(teacher) {
+    try {
+      const netState = await NetInfo.fetch();
+
+      if (!netState.isConnected) {
+        Alert.alert(
+          'No Internet',
+          'Please connect to the internet to proceed.',
+        );
+        return;
       }
-      // Add new teacher
-      return [teacher, ...prevTeachers];
-    });
-    setShowTeacherForm(false);
-    setEditingTeacher(null);
+
+      if (teacher?.fId && faculties.some(t => t.fId === teacher.fId)) {
+        // Teacher exists → update
+        await dispatch(updateTeacherAsync(teacher)).unwrap();
+      } else {
+        // Teacher does not exist → add new
+        await dispatch(addTeacherAsync(teacher)).unwrap();
+      }
+
+      // Reset UI state
+      setShowForm(false);
+      setEditingTeacher(null);
+    } catch (error) {
+      console.error('Failed to add or update teacher:', error);
+      Alert.alert('Error', 'Something went wrong while saving teacher data.');
+    }
   }
 
   // Delete a teacher by id
@@ -121,13 +155,51 @@ export default function Faculties() {
   }
 
   return (
-    <>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
-        style={[styles.container, { backgroundColor: colors.background }]}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.accent}
+          />
+        }
       >
         <Text style={[styles.title, { color: colors.accent }]}>
           Our Faculties
         </Text>
+
+        {loading && !refreshing && (
+          <ActivityIndicator
+            size="large"
+            color={colors.accent}
+            style={{ marginVertical: 20 }}
+          />
+        )}
+
+        {error && (
+          <Text
+            style={{
+              color: colors.error || 'red',
+              textAlign: 'center',
+              marginBottom: 10,
+            }}
+          >
+            {error}
+          </Text>
+        )}
+
+        {!loading && (!faculties || faculties.length === 0) && (
+          <Text
+            style={{
+              color: colors.text,
+              textAlign: 'center',
+              marginVertical: 20,
+            }}
+          >
+            No faculties found.
+          </Text>
+        )}
 
         {/* Add Teacher Button */}
         <TouchableOpacity
@@ -140,17 +212,17 @@ export default function Faculties() {
           </Text>
         </TouchableOpacity>
 
-        {/* Teacher List */}
-        {Object.entries(groupedTeachers).map(([department, teacherList]) => (
+        {/* Faculties grouped */}
+        {Object.entries(groupedTeachers).map(([department, teachers]) => (
           <View key={department} style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
               {department}
             </Text>
-            {teacherList.map((teacher, idx) => (
+            {teachers.map((teacher, idx) => (
               <TouchableWithoutFeedback
                 key={teacher.fId}
-                onPressIn={() => onPressIn(teacher.id)}
-                onPressOut={() => onPressOut(teacher.id)}
+                onPressIn={() => onPressIn(teacher.fId)}
+                onPressOut={() => onPressOut(teacher.fId)}
               >
                 <Animatable.View
                   ref={ref => (animateRefs.current[teacher.fId] = ref)}
@@ -169,14 +241,32 @@ export default function Faculties() {
                   <View style={styles.avatarContainer}>
                     {teacher.avatar ? (
                       <Image
-                        source={{ uri: teacher.avatar }}
-                        style={styles.avatar}
+                        source={{
+                          uri: (() => {
+                            const uri = `https://ideal-server-6c83.onrender.com${teacher.avatar}`;
+                            console.log('Image URI:', uri);
+                            return uri;
+                          })(),
+                        }}
+                        style={[
+                          styles.avatar,
+                          {
+                            width: AVATAR_SIZE,
+                            height: AVATAR_SIZE,
+                            borderRadius: AVATAR_SIZE / 2,
+                          },
+                        ]}
                       />
                     ) : (
                       <View
                         style={[
                           styles.avatarPlaceholder,
                           { backgroundColor: colors.accent },
+                          {
+                            width: AVATAR_SIZE,
+                            height: AVATAR_SIZE,
+                            borderRadius: AVATAR_SIZE / 2,
+                          },
                         ]}
                       >
                         <Text style={styles.avatarInitial}>
@@ -212,7 +302,6 @@ export default function Faculties() {
                       </Text>
                     )}
                   </View>
-                  {/* Edit and Delete Buttons */}
                   <View style={styles.actionButtons}>
                     <TouchableOpacity
                       onPress={() => openForm(teacher)}
@@ -224,7 +313,7 @@ export default function Faculties() {
                       <Icon name="pencil" size={20} color="#fff" />
                     </TouchableOpacity>
                     <TouchableOpacity
-                      onPress={() => handleDeleteTeacher(teacher.id)}
+                      // Implement delete logic here if needed
                       style={[
                         styles.actionButton,
                         { backgroundColor: '#f44336', marginLeft: 8 },
@@ -240,21 +329,17 @@ export default function Faculties() {
         ))}
       </ScrollView>
 
-      {/* Add/Edit Teacher Modal */}
-      {showTeacherForm && (
+      {showForm && (
         <AddTeacherForm
-          visible={showTeacherForm}
-          onClose={() => setShowTeacherForm(false)}
+          visible={showForm}
+          onClose={() => setShowForm(false)}
           onAdd={handleAddOrUpdateTeacher}
           initialData={editingTeacher}
         />
       )}
-    </>
+    </View>
   );
 }
-
-const CARD_HEIGHT = sHeight * 0.13;
-const AVATAR_SIZE = CARD_HEIGHT * 0.62;
 
 const styles = StyleSheet.create({
   container: {
@@ -301,7 +386,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: sWidth * 0.04,
-    minHeight: CARD_HEIGHT,
+    minHeight: sHeight * 0.13,
     paddingVertical: sHeight * 0.019,
     paddingHorizontal: sWidth * 0.035,
     marginBottom: 15,
@@ -315,17 +400,11 @@ const styles = StyleSheet.create({
     marginRight: sWidth * 0.045,
   },
   avatar: {
-    width: AVATAR_SIZE,
-    height: AVATAR_SIZE,
-    borderRadius: AVATAR_SIZE / 2,
+    // Overridden dynamically
   },
   avatarPlaceholder: {
-    width: AVATAR_SIZE,
-    height: AVATAR_SIZE,
-    borderRadius: AVATAR_SIZE / 2,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#777',
   },
   avatarInitial: {
     color: '#fff',
