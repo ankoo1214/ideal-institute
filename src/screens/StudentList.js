@@ -383,44 +383,55 @@ export default function StudentList() {
 
           {/* Sort dropdown - Absolute overlay */}
           {sortDropdownVisible && (
-            <Animatable.View
-              animation="fadeInDown"
-              duration={220}
-              style={[
-                styles.sortDropdown,
-                { backgroundColor: colors.card, borderColor: colors.border },
-              ]}
-            >
-              {sortOptions.map(opt => (
-                <TouchableOpacity
-                  key={opt.label}
+            <Modal transparent animationType="fade">
+              <TouchableOpacity
+                style={{ flex: 1 }}
+                onPress={() => setSortDropdownVisible(false)}
+              >
+                <Animatable.View
+                  animation="fadeInDown"
+                  duration={220}
                   style={[
-                    styles.sortOption,
-                    sortField === opt.field &&
-                      sortAscending === opt.ascending &&
-                      styles.sortOptionSelected,
+                    styles.sortDropdown,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: colors.border,
+                      marginTop: sHeight * 0.218, // adjust this value to position dropdown vertically
+                      alignSelf: 'flex-end',
+                      marginRight: sHeight * 0.022,
+                    },
                   ]}
-                  onPress={() => {
-                    handleSelectSort(opt);
-                    setSortDropdownVisible(false);
-                  }}
                 >
-                  <Text
-                    style={[
-                      styles.sortOptionText,
-                      sortField === opt.field && sortAscending === opt.ascending
-                        ? {
-                            color: colors.accent,
-                            fontWeight: '700',
-                          }
-                        : { color: colors.text },
-                    ]}
-                  >
-                    {opt.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </Animatable.View>
+                  {sortOptions.map(opt => (
+                    <TouchableOpacity
+                      key={opt.label}
+                      style={[
+                        styles.sortOption,
+                        sortField === opt.field &&
+                          sortAscending === opt.ascending &&
+                          styles.sortOptionSelected,
+                      ]}
+                      onPress={() => {
+                        handleSelectSort(opt);
+                        setSortDropdownVisible(false);
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.sortOptionText,
+                          sortField === opt.field &&
+                          sortAscending === opt.ascending
+                            ? { color: colors.accent, fontWeight: '700' }
+                            : { color: colors.text },
+                        ]}
+                      >
+                        {opt.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </Animatable.View>
+              </TouchableOpacity>
+            </Modal>
           )}
         </View>
       </View>
@@ -691,7 +702,7 @@ const styles = StyleSheet.create({
 
   sortDropdown: {
     marginTop: sHeight * 0.009,
-    width: sWidth * 0.5,
+    width: sWidth * 0.4,
     borderRadius: sWidth * 0.024,
     borderWidth: 1,
     elevation: 6,
@@ -706,10 +717,10 @@ const styles = StyleSheet.create({
     borderRadius: sWidth * 0.027,
   },
   sortOptionSelected: {
-    backgroundColor: '#f0f8ff',
+    // backgroundColor: '#f0f8ff',
   },
   sortOptionText: {
-    fontSize: sWidth * 0.045,
+    fontSize: sWidth * 0.035,
     color: '#444',
   },
 
