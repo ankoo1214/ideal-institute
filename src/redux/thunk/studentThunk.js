@@ -101,6 +101,7 @@ export const updateStudentAsync = createAsyncThunk(
   'students/updateStudentAsync',
   async ({ id, changes }, { rejectWithValue }) => {
     try {
+      console.log('Update Id:>', id);
       await insertTable('STUDENTS', { ...changes, id });
       await fetch(`${API_URL}/${id}`, {
         method: 'PUT',

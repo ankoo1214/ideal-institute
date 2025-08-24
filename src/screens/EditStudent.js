@@ -16,7 +16,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Animatable from 'react-native-animatable';
 import { useDispatch } from 'react-redux';
 import { updateStudent } from '../redux/slice/studentSlice';
-import { updateStudentInDb } from '../db/updateQuery';
+import { updateInDb } from '../db/updateQuery';
 import { sHeight, sWidth } from '../assets/utils';
 import { useTheme } from '../theme/ThemeContext';
 import NetInfo from '@react-native-community/netinfo';
@@ -121,7 +121,7 @@ export default function EditStudent({ route, navigation }) {
       };
 
       dispatch(updateStudentAsync({ id: student.id, changes: studentToUpdate }));
-      await updateStudentInDb(student.id, studentToUpdate);
+      await updateInDb('STUDENTS',student.id, studentToUpdate);
 
       alert('Student updated successfully!');
       navigation.goBack();
@@ -536,10 +536,10 @@ function getStyles(colors) {
       backgroundColor: colors.background,
     },
     title: {
-      fontSize: sWidth * 0.085,
-      fontWeight: '700',
+      fontSize: sWidth * 0.045,
+      fontWeight: '600',
       marginBottom: sHeight * 0.035,
-      color: colors.text,
+      color: colors.accent,
       alignSelf: 'center',
       letterSpacing: 1,
     },
@@ -651,14 +651,14 @@ function getStyles(colors) {
     },
     feeButton: {
       backgroundColor: colors.buttonBackground,
-      paddingVertical: sHeight * 0.02,
-      borderRadius: sWidth * 0.03,
+      paddingVertical: sHeight * 0.01,
+      borderRadius: sWidth * 0.04,
       marginVertical: sHeight * 0.015,
       alignItems: 'center',
     },
     feeText: {
       color: colors.buttonText,
-      fontWeight: '700',
+      fontWeight: '600',
       fontSize: sWidth * 0.048,
     },
     feeItem: {

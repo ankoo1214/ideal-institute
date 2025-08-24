@@ -3,13 +3,28 @@ import { insertTable } from '../../db/insertTable';
 import { deleteStudentFromDb, deleteTeacherFromDb } from '../../db/deleteQuery'; // You need to implement
 import { fetchTable } from '../../db/fetchTable';
 import { deleteStudent } from '../slice/studentSlice';
+import { updateInDb } from '../../db/updateQuery';
 
 const API_URL = 'https://ideal-server-6c83.onrender.com/api/teachers'; // Change to correct URL
 // https://ideal-server-6c83.onrender.com/api/teachers
+const fetchTeachers = async () => {
+  try {
+    const response = await fetch(API_URL);
+    if (!response.ok) {
+      throw new Error('Failed to fetch teachers');
+    }
+    const data = await response.json();
+    console.log('Teachers: ', data);
+  } catch (error) {
+    console.error('Error fetching teachers: ', error.message);
+  }
+};
+
 export const fetchTeachersAsync = createAsyncThunk(
   'teachers/fetchTeachersAsync',
   async (_, { rejectWithValue }) => {
     try {
+
       console.log('[fetchTeachersAsync] Fetching teachers from API...');
       const response = await fetch(API_URL);
 
@@ -80,23 +95,25 @@ export const addTeacherAsync = createAsyncThunk(
   'teachers/addTeacherAsync',
   async (teacherObj, { rejectWithValue }) => {
     try {
-      console.log('Faculty Add:>', teacherObj);
+      console.log('Faculty Add:---->', teacherObj);
 
       await insertTable('FACULTIES', teacherObj); // Local SQLite save
-
+      console.log('Form data:>', formData);
       const formData = new FormData();
 
       // Append text fields
       for (const key in teacherObj) {
+        console.log('Formdata and Key:>', key);
         if (key !== 'avatar' && teacherObj[key]) {
           formData.append(key, teacherObj[key]);
         }
       }
 
       // Append avatar
-      if (teacherObj.avatar?.uri) {
+      if (teacherObj.avatar) {
+        console.log('teacherObject:>', teacherObj.avatar);
         formData.append('avatar', {
-          uri: teacherObj.avatar.uri,
+          uri: teacherObj.avatar,
           name: teacherObj.avatar.fileName || 'avatar.jpg',
           type: teacherObj.avatar.type || 'image/jpeg',
         });
@@ -123,27 +140,42 @@ export const addTeacherAsync = createAsyncThunk(
   },
 );
 
-
 export const updateTeacherAsync = createAsyncThunk(
   'teachers/updateTeacherAsync',
   async ({ id, changes }, { rejectWithValue }) => {
     try {
+      console.log('👉 UpdateTeacherAsync called with:', { id, changes });
+
       // Update on local DB
-      await insertTable('FACULTIES', { id, ...changes });
+      console.log('🔄 Updating in Local DB...');
+      const localUpdate = await updateInDb('FACULTIES', id, changes);
+      console.log('✅ Local DB update success:', localUpdate);
 
       // Update on backend API
-      await fetch(`${API_URL}/${id}`, {
+      console.log(`🌐 Sending PUT request to API: ${API_URL}/${id}`);
+      const response = await fetch(`${API_URL}/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(changes),
       });
 
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error('❌ API update failed:', errText);
+        throw new Error(`API Error: ${response.status} - ${errText}`);
+      }
+
+      const responseData = await response.json();
+      console.log('✅ API update success:', responseData);
+
       return { id, changes };
     } catch (error) {
+      console.error('🚨 Update teacher failed:', error);
       return rejectWithValue(error.message || 'Failed to update teacher.');
     }
   },
 );
+
 export const deleteTeacherAsync = createAsyncThunk(
   'teachers/deleteTeacherAsync',
   async (id, { rejectWithValue }) => {
@@ -184,4 +216,3 @@ export const deleteTeacherAsync = createAsyncThunk(
     }
   },
 );
-

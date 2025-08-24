@@ -5,12 +5,14 @@ import { useTheme } from '../theme/ThemeContext';
 import { sWidth, sHeight } from '../assets/utils';
 import { dropTable } from '../db/deleteTable';
 import NetInfo from '@react-native-community/netinfo';
+import { createTable } from '../db/createTable';
 
 const Splash = ({ navigation }) => {
   const { colors } = useTheme();
   const logoRef = useRef(null);
 
   useEffect(() => {
+    createTable('FACULTIES');
     if (logoRef.current) {
       logoRef.current
         .fadeInDown(800)

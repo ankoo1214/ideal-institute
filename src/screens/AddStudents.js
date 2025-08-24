@@ -822,8 +822,8 @@ const getStyles = colors =>
     title: {
       fontSize: sWidth * 0.055,
       fontWeight: '700',
-      color: colors.text,
-      marginBottom: sHeight * 0.02,
+      color: colors.accent,
+      marginVertical: sHeight * 0.02,
       alignSelf: 'center',
       letterSpacing: 2,
     },
@@ -954,7 +954,7 @@ const getStyles = colors =>
     },
     saveButton: {
       borderRadius: sWidth * 0.06,
-      paddingVertical: sHeight * 0.02,
+      paddingVertical: sHeight * 0.015,
       marginTop: sHeight * 0.02,
       alignItems: 'center',
     },

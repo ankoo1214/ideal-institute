@@ -16,7 +16,7 @@ import { Alert } from 'react-native';
 import * as Animatable from 'react-native-animatable';
 import { useTheme } from '../theme/ThemeContext';
 import AddTeacherForm from './AddTeacherForm';
-import Icon from 'react-native-vector-icons/Ionicons';
+import Entypo from 'react-native-vector-icons/Entypo';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   fetchTeachersAsync,
@@ -26,6 +26,9 @@ import {
 } from '../redux/thunk/facultyThunk';
 import { Dimensions } from 'react-native';
 import { deleteStudentFromDb } from '../db/deleteQuery';
+import { fetchTable } from '../db/fetchTable';
+import { dropTable } from '../db/deleteTable';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 const sWidth = Dimensions.get('window').width;
 const sHeight = Dimensions.get('window').height;
 
@@ -113,15 +116,29 @@ export default function Faculties() {
     }
   }
 
-  function openForm(forTeacher = null) {
+  async function openForm(forTeacher = null) {
+    console.log('Types of faculties fId::::::>', forTeacher);
     setEditingTeacher(forTeacher);
     setShowForm(true);
+    console.log('For Teacher:>', faculties);
+    console.log(
+      'Type of teacher.fId:',
+      typeof forTeacher?.fId,
+      'Value:',
+      forTeacher?.fId,
+    );
+    console.log('Types of faculties fId:-->', JSON.stringify(faculties));
+    if (faculties.some(t => t.fId === forTeacher.fId)) {
+      console.log('Teacher exists → update:', forTeacher);
+    } else {
+      console.log('Teacher does not exist → add:', forTeacher);
+    }
   }
 
   async function handleAddOrUpdateTeacher(teacher) {
     try {
       const netState = await NetInfo.fetch();
-      console.log('New Status::>', netState);
+
       if (!netState.isConnected) {
         Alert.alert(
           'No Internet',
@@ -129,13 +146,25 @@ export default function Faculties() {
         );
         return;
       }
-
+      console.log('All faculties:>', teacher);
+      console.log(
+        'Type of teacher.fId:',
+        typeof teacher?.fId,
+        'Value:',
+        teacher?.fId,
+      );
+      console.log('Types of faculties fId:', JSON.stringify(faculties));
       if (teacher?.fId && faculties.some(t => t.fId === teacher.fId)) {
-        // Teacher exists → update
-        await dispatch(updateTeacherAsync(teacher)).unwrap();
+        console.log('Teacher exists → update:', teacher);
+        await dispatch(
+          updateTeacherAsync({
+            id: teacher.fId,
+            changes: teacher,
+          }),
+        );
       } else {
-        // Teacher does not exist → add new
-        await dispatch(addTeacherAsync(teacher)).unwrap();
+        console.log('Teacher does not exist → add:', teacher);
+        await dispatch(addTeacherAsync(teacher));
       }
 
       // Reset UI state
@@ -194,7 +223,7 @@ export default function Faculties() {
           <ActivityIndicator
             size="large"
             color={colors.accent}
-            style={{ marginVertical: 20 }}
+            style={{ marginVertical: sWidth * 0.009 }}
           />
         )}
 
@@ -318,7 +347,7 @@ export default function Faculties() {
                     )}
                   </View>
                   <View style={styles.actionButtons}>
-                    <TouchableOpacity
+                    {/* <TouchableOpacity
                       onPress={() => openForm(teacher)}
                       style={[
                         styles.actionButton,
@@ -326,18 +355,25 @@ export default function Faculties() {
                       ]}
                     >
                       <Icon name="pencil" size={20} color="#fff" />
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
                     <TouchableOpacity
                       // Implement delete logic here if needed
                       onPress={() => {
                         handleDeleteTeacher(teacher.id);
                       }}
                       style={[
+                        // backgroundColor: '#f44336'),
                         styles.actionButton,
-                        { backgroundColor: '#f44336', marginLeft: 8 },
+                        {
+                          marginLeft: sWidth * 0.1,
+                        },
                       ]}
                     >
-                      <Icon name="trash" size={22} color="#fff" />
+                      <Icon
+                        name="delete-outline"
+                        size={sWidth * 0.055}
+                        color={colors.error}
+                      />
                     </TouchableOpacity>
                   </View>
                 </Animatable.View>
@@ -377,8 +413,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: sWidth * 0.03,
   },
   title: {
-    fontSize: sWidth * 0.08,
-    fontWeight: '900',
+    fontSize: sWidth * 0.05,
+    fontWeight: '600',
     textAlign: 'center',
     marginBottom: sHeight * 0.025,
     letterSpacing: 1.3,
@@ -386,8 +422,8 @@ const styles = StyleSheet.create({
   addButton: {
     alignSelf: 'center',
     backgroundColor: '#0099ff',
-    paddingVertical: sHeight * 0.015,
-    paddingHorizontal: sWidth * 0.1,
+    paddingVertical: sHeight * 0.01,
+    paddingHorizontal: sWidth * 0.05,
     borderRadius: sWidth * 0.04,
     marginBottom: sHeight * 0.02,
     elevation: 5,
@@ -398,14 +434,14 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     color: '#fff',
-    fontSize: sWidth * 0.05,
+    fontSize: sWidth * 0.04,
     fontWeight: '700',
   },
   section: {
     marginBottom: 26,
   },
   sectionTitle: {
-    fontSize: sWidth * 0.055,
+    fontSize: sWidth * 0.045,
     fontWeight: '700',
     marginBottom: sHeight * 0.008,
     marginLeft: sWidth * 0.01,
@@ -464,8 +500,8 @@ const styles = StyleSheet.create({
   actionButtons: {
     flexDirection: 'row',
     position: 'absolute',
-    right: sWidth * 0.03,
-    top: sHeight * 0.02,
+    right: sWidth * 0.01,
+    top: sHeight * 0.01,
   },
   actionButton: {
     width: sWidth * 0.08,

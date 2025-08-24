@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useTheme, useThemeMode } from '../theme/ThemeContext';
 import { sWidth, sHeight } from '../assets/utils';
+import { dropTable } from '../db/deleteTable';
 
 const themeOptions = [
   { label: 'System Default', value: 'system' },
@@ -30,7 +31,9 @@ export default function Settings() {
   };
 
   const styles = getStyles(colors);
-
+  const resetdata = async () => {
+    await dropTable('FACULTIES');
+  };
   return (
     <ScrollView
       style={styles.container}
@@ -122,6 +125,15 @@ export default function Settings() {
       {/* Account */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Account</Text>
+        <TouchableOpacity
+          onPress={() => {
+            resetdata();
+          }}
+          style={styles.listItem}
+          activeOpacity={0.75}
+        >
+          <Text style={styles.listItemText}>Reset App</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={styles.listItem} activeOpacity={0.75}>
           <Text style={styles.listItemText}>Edit Profile</Text>
         </TouchableOpacity>

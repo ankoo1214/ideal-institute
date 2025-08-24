@@ -374,7 +374,9 @@ export default function AddTeacherForm({
       Alert.alert('Missing Fields', 'Please fill in all required fields.');
       return;
     }
-    const teacherId = initialData ? initialData.id : generateRandomID();
+    const teacherId = initialData
+      ? initialData.id || initialData.fId
+      : generateRandomID();
     const newTeacher = {
       fId: teacherId,
       name: name.trim(),

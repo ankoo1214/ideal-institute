@@ -72,7 +72,7 @@ export default function StudentList() {
   // Fetch students from DB on mount and refresh
   useEffect(() => {
     checkNetwork();
-    dispatch(fetchStudentsAsync());
+    // dispatch(fetchStudentsAsync());
     loadStudents();
 
     // Cleanup keyboard listener
@@ -287,14 +287,22 @@ export default function StudentList() {
               style={styles.editButton}
               activeOpacity={0.7}
             >
-              <Icon name="pencil-outline" size={22} color={colors.accent} />
+              <Icon
+                name="pencil-outline"
+                size={sWidth * 0.055}
+                color={colors.accent}
+              />
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => confirmDelete(item)}
               style={styles.deleteButton}
               activeOpacity={0.7}
             >
-              <Icon name="delete-outline" size={22} color={colors.error} />
+              <Icon
+                name="delete-outline"
+                size={sWidth * 0.055}
+                color={colors.error}
+              />
             </TouchableOpacity>
           </View>
         </View>
@@ -647,6 +655,7 @@ const styles = StyleSheet.create({
   filterSortBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    borderWidth: 1,
     borderTopWidth: 1,
     borderBottomWidth: 1,
     borderColor: '#ddd',
@@ -654,6 +663,7 @@ const styles = StyleSheet.create({
     marginBottom: sWidth * 0.025,
     paddingHorizontal: sWidth * 0.04,
     paddingVertical: sHeight * 0.012,
+    borderRadius: 10,
   },
   filterSortButton: {
     flexDirection: 'row',
@@ -775,15 +785,15 @@ const styles = StyleSheet.create({
   actionButtons: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: sWidth * 0.03,
+
     alignSelf: 'flex-start',
   },
   editButton: {
-    marginRight: sWidth * 0.03,
+    // marginRight: sWidth * 0.03,
     padding: sWidth * 0.014,
   },
   deleteButton: {
-    padding: sWidth * 0.014,
+   marginLeft: sWidth * 0.01,
   },
 
   emptyContainer: {
