@@ -11,6 +11,7 @@ import FeesStructure from '../components/FeeStructure';
 import Batches from '../components/Batches';
 import Faculties from '../components/Faculties';
 import AddMenu from '../components/AddMenu';
+import FacultyDetails from '../components/FacultyDetails';
 
 const Stack = createNativeStackNavigator();
 
@@ -66,6 +67,11 @@ export default function StackNav() {
           name="Faculties"
           component={Faculties}
           options={{ title: 'Faculties' }}
+        />
+        <Stack.Screen
+          name="FacultyDetails"
+          component={FacultyDetails}
+          options={{ title: 'Faculty Details' }}
         />
         {/* <Stack.Screen
           name="AddMenu"

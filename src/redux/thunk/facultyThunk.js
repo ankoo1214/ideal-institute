@@ -19,6 +19,9 @@ const fetchTeachers = async () => {
     console.error('Error fetching teachers: ', error.message);
   }
 };
+const CLOUDINARY_UPLOAD_PRESET = 'ideal-app'; // from Cloudinary
+const CLOUDINARY_CLOUD_NAME = 'dwls3h9ix';
+const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/upload`;
 
 export const fetchTeachersAsync = createAsyncThunk(
   'teachers/fetchTeachersAsync',
@@ -91,39 +94,61 @@ export const fetchTeachersAsync = createAsyncThunk(
   },
 );
 
+
 export const addTeacherAsync = createAsyncThunk(
   'teachers/addTeacherAsync',
   async (teacherObj, { rejectWithValue }) => {
     try {
       console.log('Faculty Add:---->', teacherObj);
 
-      await insertTable('FACULTIES', teacherObj); // Local SQLite save
-      console.log('Form data:>', formData);
-      const formData = new FormData();
+      // First: Save to local SQLite
+      await insertTable('FACULTIES', teacherObj);
 
-      // Append text fields
-      for (const key in teacherObj) {
-        console.log('Formdata and Key:>', key);
-        if (key !== 'avatar' && teacherObj[key]) {
-          formData.append(key, teacherObj[key]);
+      // Prepare a copy of the teacher object to send to your API
+      const teacherDataToSend = { ...teacherObj };
+
+      // If avatar exists and is a local file URI, upload to Cloudinary first
+      if (teacherObj.avatar && !teacherObj.avatar.startsWith('http')) {
+        const imageForm = new FormData();
+        imageForm.append('file', {
+          uri: teacherObj.avatar,
+          type: 'image/jpeg', // adjust if needed
+          name: 'avatar.jpg',
+        });
+        imageForm.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+        const cloudRes = await fetch(CLOUDINARY_URL, {
+          method: 'POST',
+          body: imageForm,
+        });
+
+        if (!cloudRes.ok) {
+          const cloudError = await cloudRes.json();
+          throw new Error(
+            cloudError.error?.message || 'Cloudinary upload failed',
+          );
+        }
+
+        const cloudData = await cloudRes.json();
+
+        // Replace avatar in teacher data with Cloudinary URL
+        teacherDataToSend.avatar = cloudData.secure_url;
+      }
+
+      // Now build FormData for your API request
+      const formData = new FormData();
+      for (const key in teacherDataToSend) {
+        if (teacherDataToSend[key]) {
+          formData.append(key, teacherDataToSend[key]);
         }
       }
 
-      // Append avatar
-      if (teacherObj.avatar) {
-        console.log('teacherObject:>', teacherObj.avatar);
-        formData.append('avatar', {
-          uri: teacherObj.avatar,
-          name: teacherObj.avatar.fileName || 'avatar.jpg',
-          type: teacherObj.avatar.type || 'image/jpeg',
-        });
-      } else if (typeof teacherObj.avatar === 'string') {
-        formData.append('avatar', teacherObj.avatar);
-      }
+      // Your API expects form-data but avatar now is a URL string, so no file upload here
 
       const response = await fetch(API_URL, {
         method: 'POST',
-        body: formData, // 👈 No headers, RN sets Content-Type
+        body: formData,
+        // Note: Do NOT set Content-Type headers; let RN set it with multipart boundaries
       });
 
       if (!response.ok) {

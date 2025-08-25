@@ -396,9 +396,9 @@ export default function StudentList() {
                     {
                       backgroundColor: colors.card,
                       borderColor: colors.border,
-                      marginTop: sHeight * 0.218, // adjust this value to position dropdown vertically
+                      marginTop: sWidth * 0.54, // adjust this value to position dropdown vertically
                       alignSelf: 'flex-end',
-                      marginRight: sHeight * 0.022,
+                      marginRight: sWidth * 0.05,
                     },
                   ]}
                 >

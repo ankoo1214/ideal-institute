@@ -29,6 +29,7 @@ import { deleteStudentFromDb } from '../db/deleteQuery';
 import { fetchTable } from '../db/fetchTable';
 import { dropTable } from '../db/deleteTable';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useNavigation } from '@react-navigation/native';
 const sWidth = Dimensions.get('window').width;
 const sHeight = Dimensions.get('window').height;
 
@@ -46,7 +47,7 @@ export default function Faculties() {
   const { colors } = useTheme();
   const dispatch = useDispatch();
   const animateRefs = useRef({});
-
+  const navigation = useNavigation();
   const faculties = useSelector(state => state.faculties.teachers);
   const loading = useSelector(state => state.faculties.loading);
   const error = useSelector(state => state.faculties.error);
@@ -291,7 +292,7 @@ export default function Faculties() {
                   <View style={styles.avatarContainer}>
                     {teacher.avatar ? (
                       <Image
-                        source={{ uri: normalizeImageUri(teacher.avatar) }}
+                        source={{ uri: teacher.avatar }}
                         style={[
                           styles.avatar,
                           {
@@ -357,6 +358,21 @@ export default function Faculties() {
                       <Icon name="pencil" size={20} color="#fff" />
                     </TouchableOpacity> */}
                     <TouchableOpacity
+                      onPress={() =>
+                        navigation.navigate('FacultyDetails', { teacher })
+                      }
+                      style={[
+                        styles.actionButton,
+                        // { backgroundColor: '#2196F3' },
+                      ]} // blue background
+                    >
+                      <Icon
+                        name="eye"
+                        size={sWidth * 0.055}
+                        color={colors.accent}
+                      />
+                    </TouchableOpacity>
+                    <TouchableOpacity
                       // Implement delete logic here if needed
                       onPress={() => {
                         handleDeleteTeacher(teacher.id);
@@ -365,7 +381,7 @@ export default function Faculties() {
                         // backgroundColor: '#f44336'),
                         styles.actionButton,
                         {
-                          marginLeft: sWidth * 0.1,
+                          // marginLeft: sWidth * 0.1,
                         },
                       ]}
                     >
